@@ -2,7 +2,14 @@ import {Contract, ethers} from "ethers";
 import {BigNumber as EthersBigNumber} from "ethers";
 import {ContractBundle} from '@moonwell-fi/moonwell.js'
 
-export async function passGovProposal(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, proposalData: any){
+export type ProposalData = {
+    targets: string[]
+    values: number[]
+    signatures: string[]
+    callDatas: string[]
+}
+
+export async function passGovProposal(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, proposalData: ProposalData){
     console.log("[+] Submitting the following proposal to governance\n", JSON.stringify(proposalData, null ,2), '\n======')
 
     const governor = new ethers.Contract(
