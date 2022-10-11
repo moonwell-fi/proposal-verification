@@ -28,5 +28,8 @@ jobs:
         if: steps.node-cache.outputs.cache-hit != 'true'
         run: npm ci
 
+      - name: Install ganache-cli
+        run: npm install -g ganache-cli
+
       - name: Run Tests
         run: npm test
