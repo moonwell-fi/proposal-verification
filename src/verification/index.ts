@@ -167,6 +167,7 @@ export async function startGanache(contracts: ContractBundle, forkBlock: number,
     ganache-cli
       ${unlockAddresses && unlockAddresses.map(i => '--unlock ' + i).join(' ')} 
       --fork "https://rpc.api.moonbeam.network@${forkBlock}"
+      -b 1
       --default-balance-ether ${ ethers.utils.parseEther("2.0") }
   `.replace(/\n/g, ' ')
         .replace(/  +/g, ' ');

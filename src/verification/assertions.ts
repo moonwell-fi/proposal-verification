@@ -238,6 +238,7 @@ export async function assertTransferGuardianPaused(provider: ethers.providers.Js
     console.log(`    ✅ Comptroller transfer guardian IS currently paused/engaged`)
   }
 }
+
 export async function assertTransferGuardianIsNotPaused(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle){
   const unitroller = new ethers.Contract(
       contracts.COMPTROLLER,
@@ -252,4 +253,155 @@ export async function assertTransferGuardianIsNotPaused(provider: ethers.provide
   } else {
     console.log(`    ✅ Comptroller transfer guardian is NOT currently paused/engaged`)
   }
+}
+
+/**
+ * Assert a market is not listed by querying the comptroller. 
+ * 
+ * NOTE: This function will fail if given the native asset.
+ * TODO(lunar-eng): Fix the above note. 
+ * 
+ * @param provider An ethers provider.
+ * @param contracts A contract bundle.
+ * @param targetUnderlyingTokenAddress The address of an ERC-20 token to ensure is not listed. 
+ */
+export async function assertMarketIsNotListed(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, targetUnderlyingTokenAddress: string){
+  const unitroller = new ethers.Contract(
+    contracts.COMPTROLLER,
+    require('../abi/Comptroller.json').abi,
+    provider
+  )
+
+  // Note that we fetch contracts from the unitroller, rather than using the static list in moonwell.js. This avoids the case
+  // where a future version of moonwell.js includes a new market which would break this assertion.
+  const allMarkets = await unitroller.getAllMarkets()
+
+  const marketContracts = allMarkets.map((market: string) => {
+    return new ethers.Contract(
+      market,
+      require('../abi/MErc20Delegator.json').abi,
+      provider
+    )
+  })
+
+  for (const marketContract of marketContracts) {
+    // Underlying will fail for the native asset.
+    let tokenAddress
+    try {
+      tokenAddress = await marketContract.underlying()
+    } catch (e: unknown) {
+      continue
+    }
+
+    if (tokenAddress === targetUnderlyingTokenAddress) {
+      throw new Error(`Market ${targetUnderlyingTokenAddress} is listed!`)
+    }
+  }
+  console.log(`    ✅ Market is not listed`)
+}
+
+/**
+ * Assert a market is listed by querying the comptroller. 
+ * 
+ * NOTE: This function will fail if given the native asset.
+ * TODO(lunar-eng): Fix the above note. 
+ * 
+ * @param provider An ethers provider.
+ * @param contracts A contract bundle.
+ * @param targetUnderlyingTokenAddress The address of an ERC-20 token to ensure is not listed. 
+ * @param expectedAddress The expected address.
+ */
+ export async function assertMarketIsListed(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, targetUnderlyingTokenAddress: string, expectedAddress: string){
+  const unitroller = new ethers.Contract(
+    contracts.COMPTROLLER,
+    require('../abi/Comptroller.json').abi,
+    provider
+  )
+
+  // Note that we fetch contracts from the unitroller, rather than using the static list in moonwell.js. This avoids the case
+  // where a future version of moonwell.js includes a new market which would break this assertion.
+  const allMarkets = await unitroller.getAllMarkets()
+
+  const marketContracts = allMarkets.map((market: string) => {
+    return new ethers.Contract(
+      market,
+      require('../abi/MErc20Delegator.json').abi,
+      provider
+    )
+  })
+
+  for (const marketContract of marketContracts) {
+    // Underlying will fail for the native asset.
+    let tokenAddress
+    try {
+      tokenAddress = await marketContract.underlying()
+    } catch (e: unknown) {
+      continue
+    }
+    console.log('underlying token... ' + tokenAddress)
+
+    if (tokenAddress === targetUnderlyingTokenAddress) {
+      if (marketContract.address === expectedAddress) {
+        throw new Error(`Market ${targetUnderlyingTokenAddress} is listed, but not at the right address. Actual: ${marketContract.address} Expected: ${expectedAddress}`)
+      }
+      
+      console.log(`    ✅ Market is listed`)
+      return
+    }
+  }
+  throw new Error(`Market ${targetUnderlyingTokenAddress} is not listed!`)
+}
+
+/**
+ * Assert a chainlink feed is not registered for a token with the given symbol. 
+ * 
+ * NOTE: This function will fail if given the native asset.
+ * TODO(lunar-eng): Fix the above note. 
+ * 
+ * @param provider An ethers provider.
+ * @param contracts A contract bundle.
+ * @param targetSymbol The symbol of an asset to query.
+ */
+export async function assertChainlinkFeedIsNotRegistered(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, targetSymbol: string) {
+  const oracle = new ethers.Contract(
+    contracts.ORACLE,
+    require('../abi/ChainlinkOracle.json').abi,
+    provider
+  )
+
+  const feed = await oracle.getFeed(targetSymbol)
+  if (feed !== ethers.constants.AddressZero) {
+    throw new Error(`There is a feed registered for symbol ${targetSymbol}`)
+  }
+  console.log(`    ✅ No Chainlink Feed registered`)
+}
+
+
+/**
+ * Assert a chainlink feed is registered for a token with the given symbol.
+ * 
+ * NOTE: This function will fail if given the native asset.
+ * TODO(lunar-eng): Fix the above note. 
+ * 
+ * @param provider An ethers provider.
+ * @param contracts A contract bundle.
+ * @param targetSymbol The symbol of an asset to query.
+ * @param expectedAddress The expected feed. 
+ */
+ export async function assertChainlinkFeedIsRegistered(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, targetSymbol: string, expectedAddress: string) {
+  const oracle = new ethers.Contract(
+    contracts.ORACLE,
+    require('../abi/ChainlinkOracle.json').abi,
+    provider
+  )
+
+  const feed = await oracle.getFeed(targetSymbol)
+  if (feed === ethers.constants.AddressZero) {
+    throw new Error(`There is a no feed registered for symbol ${targetSymbol}`)
+  }
+
+  if (feed !== expectedAddress) {
+    throw new Error(`There is a feed registered for ${targetSymbol} but it is not the expected feed. Expected: ${expectedAddress} Actual: ${feed}`)
+  }
+  console.log(`    ✅ Chainlink Feed registered`)
 }

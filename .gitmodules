@@ -1,0 +1,4 @@
+[submodule "market-deployer"]
+	path = market-deployer
+	url = https://github.com/moonwell-fi/market-deployer
+	branch = main
