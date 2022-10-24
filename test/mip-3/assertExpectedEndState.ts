@@ -1,15 +1,14 @@
 import {ethers} from "ethers";
 import {
   assertMarketIsListed,
-  assertChainlinkFeedIsRegistered
-  // assertTimelockIsAdminOfMarket,
-
-  // assertChainlinkFeedIsNotRegistered,
-  //   assertDexRewarderRewardsPerSec, assertMarketIsNotListed, assertMarketWellRewardSpeed,
-  //   assertRoundedWellBalance,
-  //   assertSTKWellEmissionsPerSecond
+  assertChainlinkFeedIsRegistered,
+  assertTimelockIsAdminOfMarket,
+  assertStorageString,
+  assertStorageAddress,
+  assertMarketSeizeShare,
+  assertMarketRF,
+  assertCF,
 } from "../../src/verification/assertions";
-import BigNumber from "bignumber.js";
 import {ContractBundle} from "@moonwell-fi/moonwell.js";
 
 export async function assertExpectedEndState(
@@ -28,16 +27,26 @@ export async function assertExpectedEndState(
 ){
     console.log("[+] Asserting protocol is in an expected state AFTER gov proposal passed")
 
-    // await assertTimelockIsAdminOfMarket(contracts, provider, marketAddress)
+    // Market has the expected values in storage.
+    const market = new ethers.Contract(
+      expectedMarketAddress,
+      require('../../src/abi/MErc20Delegator.json').abi,
+      provider
+    )
+    await assertStorageAddress(market, tokenAddress, 'underlying')
+    await assertStorageString(market, mTokenName, 'name')
+    await assertStorageString(market, mTokenSymbol, 'symbol')
 
-    // await assertStorageValue('underlying', tokenAddress)
-    // await assertStorageValue('name', mTokenName)
-    // await assertStorageValue('symbol', mTokenSymbol)
+    // Economic parameters on market are correct
+    await assertMarketRF(provider, expectedMarketAddress, reserveFactoryPercent)
+    await assertMarketSeizeShare(provider, expectedMarketAddress, protocolSeizeSharePercent)
 
-    // await assertReserveFactor(contracts, provider, marketAddress, reserveFactor)
-    // await assertProtocolSeizeShare(contracts, provider, marketAddress, protocolSeizeShare)
-    // await assertCollateralFactor(contracts, provider, marketAddress, collateralFactor)
+    // Market is admin'ed correctly by the timelock.
+    await assertTimelockIsAdminOfMarket(provider, contracts, expectedMarketAddress)
 
-    // await assertMarketIsListed(provider, contracts, tokenAddress, expectedMarketAddress)
+    // Unitroller has the market listed with the correct collateral factor
+    await assertMarketIsListed(provider, contracts, tokenAddress, expectedMarketAddress)
+    await assertCF(provider, contracts, expectedMarketAddress, collateralFactorPercent)
+
     await assertChainlinkFeedIsRegistered(provider, contracts, tokenSymbol, chainlinkFeedAddress)
 }
