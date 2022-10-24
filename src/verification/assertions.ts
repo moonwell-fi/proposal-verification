@@ -1,6 +1,7 @@
 import {ethers} from "ethers";
 import BigNumber from "bignumber.js";
 import {ContractBundle, Market} from "@moonwell-fi/moonwell.js";
+import { percentTo18DigitMantissa } from './index'
 
 export async function assertRoundedWellBalance(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, targetAddress: string, name: string, balance: number){
   const wellToken = new ethers.Contract(
@@ -205,6 +206,7 @@ export async function assertMarketRFIsNOTOneHundred(provider: ethers.providers.J
     console.log(`    ✅ ${market.name} Reserve Factor is currently set to ${reserveFactorFormatted.times(100).toFixed()}%`)
   }
 }
+
 export async function assertMarketRFIsOneHundred(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market){
   const mToken = new ethers.Contract(
       market.mTokenAddress,
@@ -293,7 +295,7 @@ export async function assertMarketIsNotListed(provider: ethers.providers.JsonRpc
       continue
     }
 
-    if (tokenAddress === targetUnderlyingTokenAddress) {
+    if (addressesMatch(tokenAddress, targetUnderlyingTokenAddress)) {
       throw new Error(`Market ${targetUnderlyingTokenAddress} is listed!`)
     }
   }
@@ -338,9 +340,7 @@ export async function assertMarketIsNotListed(provider: ethers.providers.JsonRpc
     } catch (e: unknown) {
       continue
     }
-    console.log('underlying token... ' + tokenAddress)
-
-    if (tokenAddress === targetUnderlyingTokenAddress) {
+    if (addressesMatch(tokenAddress, targetUnderlyingTokenAddress)) {
       if (marketContract.address === expectedAddress) {
         throw new Error(`Market ${targetUnderlyingTokenAddress} is listed, but not at the right address. Actual: ${marketContract.address} Expected: ${expectedAddress}`)
       }
@@ -404,4 +404,107 @@ export async function assertChainlinkFeedIsNotRegistered(provider: ethers.provid
     throw new Error(`There is a feed registered for ${targetSymbol} but it is not the expected feed. Expected: ${expectedAddress} Actual: ${feed}`)
   }
   console.log(`    ✅ Chainlink Feed registered`)
+}
+
+export async function assertTimelockIsAdminOfMarket(
+  provider: ethers.providers.JsonRpcProvider, 
+  contracts: ContractBundle,
+  marketAddress: string
+) {
+  const market = new ethers.Contract(
+    marketAddress,
+    require('../abi/MToken.json').abi,
+    provider
+  )
+
+  await assertStorageAddress(market, contracts.TIMELOCK, 'admin')
+}
+
+export async function assertCF(
+  provider: ethers.providers.JsonRpcProvider, 
+  contracts: ContractBundle,
+  marketAddress: string,
+  expectedCollateralFactor: number
+) {
+  const comptroller = new ethers.Contract(
+    contracts.COMPTROLLER,
+    require('../abi/Comptroller.json').abi,
+    provider
+  )
+
+  const collateralFactor = await comptroller.collateralFactor(marketAddress)
+  const expected = percentTo18DigitMantissa(expectedCollateralFactor)
+  if (!collateralFactor.eq(expected)) {
+    throw new Error(`Unexpected Collateral Factor value in market ${marketAddress}. Expected: ${expected}, Actual: ${collateralFactor.toString()}`)
+  }
+  console.log(`    ✅ Collateral Factor share set correctly.`)
+}
+
+export async function assertMarketRF(
+  provider: ethers.providers.JsonRpcProvider, 
+  marketAddress: string,
+  expectedRFPercent: number
+) {
+  const market = new ethers.Contract(
+    marketAddress,
+    require('../abi/MToken.json').abi,
+    provider
+  )
+
+  const reserveFactor = await market.reserveFactorMantissa()
+  const expected = percentTo18DigitMantissa(expectedRFPercent)
+  if (!reserveFactor.eq(expected)) {
+    throw new Error(`Unexpected RF value in market ${marketAddress}. Expected: ${expected}, Actual: ${reserveFactor.toString()}`)
+  }
+  console.log(`    ✅ Reserve Factor set correctly.`)
+}
+
+export async function assertMarketSeizeShare(
+  provider: ethers.providers.JsonRpcProvider, 
+  marketAddress: string,
+  expectedSeizeSharePercent: number
+) {
+  const market = new ethers.Contract(
+    marketAddress,
+    require('../abi/MToken.json').abi,
+    provider
+  )
+
+  const seizeShare = await market.protocolSeizeShareMantissa()
+  const expected = percentTo18DigitMantissa(expectedSeizeSharePercent)
+  if (!seizeShare.eq(expected)) {
+    throw new Error(`Unexpected Seize Share value value in market ${marketAddress}. Expected: ${expected}, Actual: ${seizeShare.toString()}`)
+  }
+  console.log(`    ✅ Protocol Seize share set correctly.`)
+}
+
+export async function assertStorageString(
+  contract: any, 
+  expected: string, 
+  methodName: string
+) {
+    const value: string = await contract[methodName]()
+    if (value !== expected) {
+      throw new Error(`Unexpected storage value in ${contract.address}.${methodName}. Expected: ${expected}, Actual: ${value}`)
+    }
+    console.log(`    ✅ ${methodName} set correctly.`)
+}
+
+export async function assertStorageAddress(
+  contract: any, 
+  expected: string, 
+  methodName: string
+) {
+  const value: string = (await contract[methodName]()).toUpperCase()
+  if (!addressesMatch(expected, value)) {
+    throw new Error(`Unexpected address at ${contract.address}.${methodName}. Expected: ${expected}, Actual: ${value}`)
+  }
+  console.log(`    ✅ ${methodName} address set correctly.`)
+}
+
+function addressesMatch(a: string, b: string) {
+  if (!a.startsWith('0x') || !b.startsWith('0x')) {
+    throw new Error(`Invalid addresss comparison, both must start with '0x'! Inputs: ${a}, ${b}`)
+  }
+  return a.toUpperCase() === b.toUpperCase()
 }

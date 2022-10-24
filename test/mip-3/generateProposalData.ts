@@ -16,11 +16,9 @@ export const generateProposalData = async (
 ) => {
   console.log("[+] Deploying Market ")
 
-  const bytecode = require('../../src/bin/MErc20Delegator.json')
-
   const contractFactory = new ethers.ContractFactory(
     require('../../src/abi/MErc20Delegator.json').abi,
-    bytecode.bytecode,
+    require('../../src/abi/MErc20Delegator.json').bytecode,
     deployer
   )
 

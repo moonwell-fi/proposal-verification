@@ -184,3 +184,13 @@ export async function startGanache(contracts: ContractBundle, forkBlock: number,
 
     return forkedChainProcess
 }
+
+/**
+ * Convert a whole number representing a percent to an 18 digit mantissa based number.
+ * 
+ * @param percent A whole number representing a percent. Ex. Pass 70 for 70%.
+ * @returns A percent represented as an 18 digit mantissa. Ex. 700_000_000_000_000_000 for 70%.
+ */
+export function percentTo18DigitMantissa(percent: number): ethers.BigNumber {
+    return EthersBigNumber.from(percent).mul(EthersBigNumber.from("10").pow("16"))
+}
