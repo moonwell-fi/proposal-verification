@@ -6,6 +6,9 @@ import {generateProposalData} from "./generateProposalData";
 import {assertCurrentExpectedState} from "./assertCurrentExpectedState";
 import {assertExpectedEndState} from "./assertExpectedEndState";
 
+import log, { LogLevelDesc } from 'loglevel'
+
+
 const wellTreasuryAddress = "0x519ee031E182D3E941549E7909C9319cFf4be69a";
 
 const FORK_BLOCK = 1757073

@@ -46,7 +46,8 @@ export async function assertExpectedEndState(
 
     // Unitroller has the market listed with the correct collateral factor
     await assertMarketIsListed(provider, contracts, tokenAddress, expectedMarketAddress)
-    await assertCF(provider, contracts, expectedMarketAddress, collateralFactorPercent)
-
+    
     await assertChainlinkFeedIsRegistered(provider, contracts, tokenSymbol, chainlinkFeedAddress)
+
+    await assertCF(provider, contracts, expectedMarketAddress, collateralFactorPercent)
 }

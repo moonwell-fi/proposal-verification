@@ -341,7 +341,7 @@ export async function assertMarketIsNotListed(provider: ethers.providers.JsonRpc
       continue
     }
     if (addressesMatch(tokenAddress, targetUnderlyingTokenAddress)) {
-      if (marketContract.address === expectedAddress) {
+      if (!addressesMatch(marketContract.address, expectedAddress)) {
         throw new Error(`Market ${targetUnderlyingTokenAddress} is listed, but not at the right address. Actual: ${marketContract.address} Expected: ${expectedAddress}`)
       }
       
@@ -432,7 +432,10 @@ export async function assertCF(
     provider
   )
 
-  const collateralFactor = await comptroller.collateralFactor(marketAddress)
+  const marketData = await comptroller.markets(marketAddress)
+  console.log(marketData)
+  const collateralFactor = marketData.collateralFactorMantissa
+  console.log(collateralFactor)
   const expected = percentTo18DigitMantissa(expectedCollateralFactor)
   if (!collateralFactor.eq(expected)) {
     throw new Error(`Unexpected Collateral Factor value in market ${marketAddress}. Expected: ${expected}, Actual: ${collateralFactor.toString()}`)
@@ -495,7 +498,7 @@ export async function assertStorageAddress(
   expected: string, 
   methodName: string
 ) {
-  const value: string = (await contract[methodName]()).toUpperCase()
+  const value: string = await contract[methodName]()
   if (!addressesMatch(expected, value)) {
     throw new Error(`Unexpected address at ${contract.address}.${methodName}. Expected: ${expected}, Actual: ${value}`)
   }
