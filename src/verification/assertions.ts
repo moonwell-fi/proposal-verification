@@ -377,6 +377,21 @@ export async function assertChainlinkFeedIsNotRegistered(provider: ethers.provid
 }
 
 
+ export async function assertChainlinkPricePresent(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, mtokenAddress: string) {
+  const oracle = new ethers.Contract(
+    contracts.ORACLE,
+    require('../abi/ChainlinkOracle.json').abi,
+    provider
+  )
+
+  const price = await oracle.getUnderlyingPrice(mtokenAddress)
+  if (price.eq(0)) {
+    throw new Error(`Was unable to retrieve a price for ${mtokenAddress}`)
+  }
+  console.log(`    ✅ Chainlink Feed returns a price`)
+}
+
+
 /**
  * Assert a chainlink feed is registered for a token with the given symbol.
  * 
