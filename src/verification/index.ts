@@ -1,6 +1,7 @@
 import {Contract, ethers} from "ethers";
 import {BigNumber as EthersBigNumber} from "ethers";
-import {ContractBundle} from '@moonwell-fi/moonwell.js'
+import {ContractBundle, Market} from '@moonwell-fi/moonwell.js'
+import BigNumber from "bignumber.js";
 
 export type ProposalData = {
     targets: string[]
@@ -9,13 +10,13 @@ export type ProposalData = {
     callDatas: string[]
 }
 
-export async function passGovProposal(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, proposalData: ProposalData){
+export async function passGovProposal(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, proposalData: ProposalData, signerAddressOrIndex: number | string = 0){
     console.log("[+] Submitting the following proposal to governance\n", JSON.stringify(proposalData, null ,2), '\n======')
 
     const governor = new ethers.Contract(
         contracts.GOVERNOR,
         require("../abi/MoonwellGovernorArtemis.json").abi,
-        provider.getSigner(0) // Deployer
+        provider.getSigner(signerAddressOrIndex) // Deployer
     )
 
     const proposalResult = await governor.propose(
@@ -91,12 +92,10 @@ export async function setupDeployerForGovernance(contracts: ContractBundle, prov
     const deployer = await provider.getSigner(0)
 
     // Fund the WELL treasury
-    const fundParamsMsigResult = await deployer.sendTransaction({
-        to: wellTreasuryAddress,
-        value: ethers.utils.parseEther("1.0")
-    })
-    await fundParamsMsigResult.wait(1)
-    console.log(`[+] Funded wellTreasury (${await wellTreasury.getAddress()}) in ${fundParamsMsigResult.hash}`)
+    await provider.send('evm_setAccountBalance',
+        [wellTreasuryAddress, 1e18]
+    )
+    console.log(`[+] Funded wellTreasury (${await wellTreasury.getAddress()}) with 1 token`)
 
     const govToken = new ethers.Contract(
         contracts.GOV_TOKEN,
@@ -162,14 +161,17 @@ export const sleep = async (pauseDelay: number) => {
 export async function startGanache(contracts: ContractBundle, forkBlock: number, unlockAddresses?: string[]){
     console.log("=== Launching a Ganache Chain ===");
 
+    // TODO: see if we're running on ganache 6 or 7 :rolling-eyes:
+
     // We unlock the params and upgrades multisig.
     const command = `
     ganache-cli
-      ${unlockAddresses && unlockAddresses.map(i => '--unlock ' + i).join(' ')} 
-      --fork "https://rpc.api.moonbeam.network@${forkBlock}"
-      --default-balance-ether ${ ethers.utils.parseEther("2.0") }
-  `.replace(/\n/g, ' ')
-        .replace(/  +/g, ' ');
+      ${unlockAddresses && unlockAddresses.map(i => '--wallet.unlockedAccounts ' + i).join(' ')} 
+      --fork.url "https://rpc.api.moonbeam.network"
+      --fork.blockNumber ${forkBlock}
+      --wallet.defaultBalance ${ ethers.utils.parseEther("2.0") }
+    `.replace(/\n/g, ' ')
+     .replace(/  +/g, ' ');
 
     const forkedChainProcess = require('child_process').spawn(command, [], { shell: true, detached: true })
 
@@ -182,4 +184,75 @@ export async function startGanache(contracts: ContractBundle, forkBlock: number,
     console.log(command)
 
     return forkedChainProcess
+}
+
+export async function ensureWalletIsFunded(provider: ethers.providers.JsonRpcProvider, walletAddress: string){
+    const wallet = await provider.getSigner(walletAddress)
+    const mantissa = EthersBigNumber.from(1).mul(10).pow(18)
+
+    const walletBalance = await wallet.getBalance()
+    console.log(walletBalance.toString())
+
+    if (walletBalance.isZero()){
+        // Fund the WELL treasury
+        await provider.send('evm_setAccountBalance',
+            [walletAddress, 1e18]
+        )
+        console.log(`[+] Funded wallet (${walletAddress}) with 1 token`)
+    } else {
+        console.log(`[+] Wallet (${walletAddress}) already has ${walletBalance.div(mantissa)} native tokens`)
+    }
+}
+
+export async function replaceXCAssetWithDummyERC20(provider: ethers.providers.JsonRpcProvider, marketToClone: Market, marketToReplace: Market){
+    // Push the code into the address of the xc asset
+    await provider.send('evm_setAccountCode', [
+        marketToReplace.tokenAddress,
+        await provider.getCode(
+            marketToClone.tokenAddress
+        )
+    ])
+
+    // Go clone the first 15 slots, and hope that is sufficient for whatever parameters are accessed as part of
+    // the proposal.
+    //
+    // NOTE: you may need to do other things like set the right data at a specific slot to do things like override
+    // a symbol or decimals or something, check below for an example of doing that.
+    for (const slot of Array.from(Array(15).keys())){
+        // console.log("Cloning storage slot", slot)
+        const marketStorage = await provider.getStorageAt(
+            marketToClone.tokenAddress,
+            EthersBigNumber.from(slot)
+        )
+        console.log(slot, marketStorage)
+        await provider.send('evm_setAccountStorageAt', [
+            marketToReplace.tokenAddress,
+            ethers.utils.hexZeroPad("0x" + slot.toString(16), 32),
+            ethers.utils.hexZeroPad(marketStorage, 32)
+        ])
+    }
+
+    // Neat parlor trick, if you pass in FRAX on Moonbeam, the `_symbol` is stored in slot 4, and we can set it
+    // to whatever we want. The code below ensures that the `_symbol` returned by xcDOT is correct even while
+    // cloning the FRAX contract
+    // https://moonscan.io/address/0x322e86852e492a7ee17f28a78c663da38fb33bfb#code
+    // Line 498
+    // const marketStorage = await provider.getStorageAt(
+    //     marketToClone.tokenAddress,
+    //     EthersBigNumber.from(4)
+    // )
+    // console.log("marketStorage", marketStorage)
+    // await provider.send('evm_setAccountStorageAt', [
+    //     // Target
+    //     marketToReplace.tokenAddress,
+    //     // Slot
+    //     ethers.utils.hexZeroPad("0x" + (4).toString(16), 32),
+    //     // New Data
+    //     new BigNumber(
+    //         ethers.utils.formatBytes32String('xcDOT')
+    //     )
+    //         .plus('xcDOT'.length * 2) // Storage strings are UTF-8 and have their size encoded into them, so double ascii length and add this to the message
+    //         .toString(16) // Format as a hex string
+    //         .replace(/^/, '0x') // Add 0x prefix
+    // ])
 }
