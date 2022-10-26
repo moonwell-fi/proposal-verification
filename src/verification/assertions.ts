@@ -188,6 +188,24 @@ export async function assertMarketCFIsZero(provider: ethers.providers.JsonRpcPro
   }
 }
 
+export async function assertMarketCFEqualsPercent(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market, expectedPercent: number){
+  const unitroller = new ethers.Contract(
+      contracts.COMPTROLLER,
+      require('../abi/Comptroller.json').abi,
+      provider
+  )
+
+  const marketData = await unitroller.markets(market.mTokenAddress)
+
+  const mantissaFormatted = new BigNumber(marketData.collateralFactorMantissa.toString()).div(1e18)
+
+  if (!mantissaFormatted.times(100).isEqualTo(expectedPercent)){
+    throw new Error(`The ${market.name} market has that DOES NOT EQUAL (${expectedPercent}%), which was not expected!`)
+  } else {
+    console.log(`    ✅ ${market.name} Collateral Factor is currently set to ${mantissaFormatted.times(100)}%`)
+  }
+}
+
 export async function assertMarketRFIsNOTOneHundred(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market){
   const mToken = new ethers.Contract(
       market.mTokenAddress,
