@@ -11,8 +11,6 @@ import {generateProposalData} from "./generateProposalData";
 import {assertCurrentExpectedState} from "./assertCurrentExpectedState";
 import {assertExpectedEndState} from "./assertExpectedEndState";
 
-ethers.utils.Logger.setLogLevel(ethers.utils.Logger.levels.ERROR);
-
 const FORK_BLOCK = 1966448
 
 test("mip-2-verifications", async () => {
