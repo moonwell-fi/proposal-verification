@@ -11,8 +11,6 @@ import {Contracts} from '@moonwell-fi/moonwell.js'
 import {generateProposalData} from "./generateProposalData";
 import {assertMarketCFEqualsPercent} from "../../src/verification/assertions";
 
-ethers.utils.Logger.setLogLevel(ethers.utils.Logger.levels.ERROR);
-
 const FORK_BLOCK = 2157923 // One block before Gauntlet submitted on-chain - https://moonbeam.moonscan.io/tx/0x4260b3d206b5ac240cab05ea61d956225a610a9763be67fafffbefb6f4298097
 
 test("mip-3-verifications", async () => {
