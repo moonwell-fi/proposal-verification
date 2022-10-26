@@ -7,7 +7,8 @@ import {assertCurrentExpectedState} from "./assertCurrentExpectedState";
 import {assertExpectedEndState} from "./assertExpectedEndState";
 
 import log, { LogLevelDesc } from 'loglevel'
-
+const logLevel: LogLevelDesc = 'info'
+log.setLevel(logLevel)
 
 const wellTreasuryAddress = "0x519ee031E182D3E941549E7909C9319cFf4be69a";
 
@@ -22,19 +23,19 @@ test("mip-3-verifications", async () => {
   const forkedChainProcess = await startGanache(
       contracts,
       FORK_BLOCK,
-      [fGLMRLM, cGLMRAPPDEV]
+      [fGLMRLM, cGLMRAPPDEV, '0x3a9249d70dCb4A4E9ef4f3AF99a3A130452ec19B', "0x5402447a0db03eee98c98b924f7d346bd19cdd17", "0xffa353dacd27071217ea80d3149c9d500b0e9a38"]
   )
 
   console.log("Waiting 5 seconds for chain to bootstrap...")
   await sleep(5)
 
   try {
-        const tokenToList = "0x27292cf0016e5df1d8b37306b2a98588acbd6fca" // axlATOM
+        const tokenToList = "0x511ab53f793683763e5a8829738301368a2411e3"  //"0x27292cf0016e5df1d8b37306b2a98588acbd6fca" // axlATOM
         const chainlinkAddress = "0x4F152D143c97B5e8d2293bc5B2380600f274a5dd" // ATOM
-        const tokenSymbol = "ATOM"
-        const tokenDecimals = 6
-        const mTokenName = "Moonwell ATOM"
-        const mTokenSymbol = "mATOM"
+        const tokenSymbol = "WELL" //  "axlATOM"
+        const tokenDecimals = 18 //  6
+        const mTokenName = "Moonwell WELL" // "Moonwell axlATOM"
+        const mTokenSymbol = "mWELL" // "maxlATOM"
         const reserveFactorPercent = 60
         const protocolSeizeSharePercent = 10
         const collateralFactorPercent = 40
