@@ -1,5 +1,5 @@
 // Patch stupid jest console.log behavior back to a normal console output.
-import {ethers} from "ethers";
+const ethers = require("ethers")
 
 beforeEach(() => {
     global.console = require('console')

@@ -1,6 +1,6 @@
 import {ethers} from "ethers";
 import {
-    assertDexRewarderRewardsPerSec, assertMarketWellRewardSpeed,
+    assertDexRewarderRewardsPerSec, assertMarketGovTokenRewardSpeed,
     assertRoundedWellBalance,
     assertSTKWellEmissionsPerSecond
 } from "../../src/verification/assertions";
@@ -51,17 +51,17 @@ export async function assertExpectedEndState(contracts: ContractBundle, provider
         new BigNumber('1.72895680708181').times(1e18)
     )
 
-    await assertMarketWellRewardSpeed(contracts, provider,
+    await assertMarketGovTokenRewardSpeed(contracts, provider,
         'GLMR',
         new BigNumber('0.649253090659341').times(1e18),
         new BigNumber(1)
     )
-    await assertMarketWellRewardSpeed(contracts, provider,
+    await assertMarketGovTokenRewardSpeed(contracts, provider,
         'xcDOT',
         new BigNumber('0.668927426739927').times(1e18),
         new BigNumber(1)
     )
-    await assertMarketWellRewardSpeed(contracts, provider,
+    await assertMarketGovTokenRewardSpeed(contracts, provider,
         'FRAX',
         new BigNumber('0.649253090659341').times(1e18),
         new BigNumber(1)
