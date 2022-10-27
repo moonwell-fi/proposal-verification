@@ -23,6 +23,7 @@ test("mip-3-verifications", async () => {
     const forkedChainProcess = await startGanache(
         contracts,
         FORK_BLOCK,
+        'https://rpc.api.moonbeam.network',
         [cGLMRAPPDEV, GAUNTLET_MULTISIG]
     )
 

@@ -16,7 +16,7 @@ test("mip-1-verifications", async () => {
 
     const contracts = Contracts.moonbeam
 
-    const forkedChainProcess = await startGanache(contracts, FORK_BLOCK, [wellTreasuryAddress])
+    const forkedChainProcess = await startGanache(contracts, FORK_BLOCK, 'https://rpc.api.moonbeam.network', [wellTreasuryAddress])
 
     console.log("Waiting 5 seconds for chain to bootstrap...")
     await sleep(5)

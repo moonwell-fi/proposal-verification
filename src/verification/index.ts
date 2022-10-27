@@ -1,6 +1,6 @@
 import {Contract, ethers} from "ethers";
 import {BigNumber as EthersBigNumber} from "ethers";
-import {ContractBundle, Market} from '@moonwell-fi/moonwell.js'
+import {ContractBundle, Market, Contracts} from '@moonwell-fi/moonwell.js'
 import BigNumber from "bignumber.js";
 
 export type ProposalData = {
@@ -103,33 +103,51 @@ export async function setupDeployerForGovernance(contracts: ContractBundle, prov
         provider
     )
 
+    let amountToTransfer
+    if (contracts.GOVERNOR === Contracts.moonriver.GOVERNOR){
+        // Floating quorum, go get the latest
+        const governor = new ethers.Contract(
+            contracts.GOVERNOR,
+            require('../abi/MoonwellGovernorApollo.json'),
+            provider
+        )
+        amountToTransfer = (await governor.getQuorum()).add(EthersBigNumber.from(1).mul(mantissa))
+    } else {
+        const governor = new ethers.Contract(
+            contracts.GOVERNOR,
+            require('../abi/MoonwellGovernorArtemis.json').abi,
+            provider
+        )
+        amountToTransfer = (await governor.quorumVotes()).add(EthersBigNumber.from(1).mul(mantissa))
+    }
+
     const currentBalance = await govToken.balanceOf(await deployer.getAddress())
     if (!currentBalance.isZero()){
-        throw new Error("Was expecting deployer currentBalance to be 0 WELL. Currently:", currentBalance.toString())
+        throw new Error("Was expecting deployer currentBalance to be 0 WELL/MFAM. Currently:", currentBalance.toString())
     } else {
-        console.log("    ✅ Deployer currentBalance === 0", "WELL")
+        console.log("    ✅ Deployer currentBalance === 0", "WELL/MFAM")
     }
 
     const govTokenTransferResult = await govToken
         .connect(wellTreasury)
         .transfer(
             await deployer.getAddress(),
-            EthersBigNumber.from(288_000_001).mul(mantissa),
+            amountToTransfer,
         )
     await govTokenTransferResult.wait()
 
     const newBalance = await govToken.balanceOf(await deployer.getAddress())
     if (newBalance.isZero()){
-        throw new Error("Was expecting deployer currentBalance to be 288M WELL. Currently:", newBalance.toString())
+        throw new Error(`Was expecting deployer currentBalance to be ${amountToTransfer} WELL/MFAM. Currently:`, newBalance.toString())
     } else {
-        console.log("    ✅ Deployer WELL balance ===", newBalance.div(mantissa).toString(), "WELL")
+        console.log("    ✅ Deployer WELL/MFAM balance ===", newBalance.div(mantissa).toString(), "WELL/MFAM")
     }
 
     const govTokenDelegateResult = await govToken
         .connect(deployer)
         .delegate(await deployer.getAddress())
 
-    console.log("[+] Delegated WELL to self in call", govTokenDelegateResult.hash)
+    console.log("[+] Delegated WELL/MFAM to self in call", govTokenDelegateResult.hash)
     await govTokenDelegateResult.wait()
 
     const delegatesResult = await govToken.delegates(await deployer.getAddress())
@@ -146,7 +164,7 @@ export async function setupDeployerForGovernance(contracts: ContractBundle, prov
     if (votingPower.isZero()){
         throw new Error("The deployer has no voting power!")
     } else {
-        console.log("    ✅ Deployer has voting power ===", votingPower.div(mantissa).toString(), 'WELL')
+        console.log("    ✅ Deployer has voting power ===", votingPower.div(mantissa).toString(), 'WELL/MFAM')
     }
 }
 
@@ -158,7 +176,7 @@ export const sleep = async (pauseDelay: number) => {
     });
 }
 
-export async function startGanache(contracts: ContractBundle, forkBlock: number, unlockAddresses?: string[]){
+export async function startGanache(contracts: ContractBundle, forkBlock: number, rpcURL: string, unlockAddresses?: string[]){
     console.log("=== Launching a Ganache Chain ===");
 
     // TODO: see if we're running on ganache 6 or 7 :rolling-eyes:
@@ -167,7 +185,7 @@ export async function startGanache(contracts: ContractBundle, forkBlock: number,
     const command = `
     ganache-cli
       ${unlockAddresses && unlockAddresses.map(i => '--wallet.unlockedAccounts ' + i).join(' ')} 
-      --fork.url "https://rpc.api.moonbeam.network"
+      --fork.url "${rpcURL}"
       --fork.blockNumber ${forkBlock}
       --wallet.defaultBalance ${ ethers.utils.parseEther("2.0") }
     `.replace(/\n/g, ' ')
@@ -224,7 +242,7 @@ export async function replaceXCAssetWithDummyERC20(provider: ethers.providers.Js
             marketToClone.tokenAddress,
             EthersBigNumber.from(slot)
         )
-        console.log(slot, marketStorage)
+        // console.log(slot, marketStorage)
         await provider.send('evm_setAccountStorageAt', [
             marketToReplace.tokenAddress,
             ethers.utils.hexZeroPad("0x" + slot.toString(16), 32),
