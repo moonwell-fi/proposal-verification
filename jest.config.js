@@ -4,6 +4,5 @@ module.exports = {
   testEnvironment: 'node',
   testMatch: [ "**/mip-*-verification.ts" ],
   testTimeout: 60 * 1000,
-  maxConcurrency: 1,
   setupFilesAfterEnv: ['./test/config.js'],
 };
