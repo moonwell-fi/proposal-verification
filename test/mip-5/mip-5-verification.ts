@@ -10,21 +10,19 @@ import {Contracts} from '@moonwell-fi/moonwell.js'
 import {generateProposalData} from "./generateProposalData";
 import {assertCurrentExpectedState} from "./assertCurrentExpectedState";
 import {assertExpectedEndState} from "./assertExpectedEndState";
+import {fMOVRGrant} from "./vars";
 
-const FORK_BLOCK = 1966448
+const FORK_BLOCK = 2858679
 
-test("mip-2-verifications", async () => {
+test("mip-5-verifications", async () => {
 
-    const contracts = Contracts.moonbeam
-
-    const fGLMRLM = '0x6972f25AB3FC425EaF719721f0EBD1Cdb58eE451'
-    const cGLMRAPPDEV = '0x519ee031E182D3E941549E7909C9319cFf4be69a'
+    const contracts = Contracts.moonriver
 
     const forkedChainProcess = await startGanache(
         contracts,
         FORK_BLOCK,
-        'https://rpc.api.moonbeam.network',
-        [fGLMRLM, cGLMRAPPDEV]
+        'https://rpc.api.moonriver.moonbeam.network',
+        [fMOVRGrant]
     )
 
     console.log("Waiting 5 seconds for chain to bootstrap...")
@@ -33,9 +31,9 @@ test("mip-2-verifications", async () => {
     try {
         const provider = new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545')
 
-        // Go transfer WELL to the deployer key from the cGLMRAPPDEV treasury, delegate those well to the deployer,
+        // Go transfer MFAM to the deployer key from the fMOVRGrant treasury, delegate those well to the deployer,
         // and assert the deployer has enough voting power to pass a proposal
-        await setupDeployerForGovernance(contracts, provider, cGLMRAPPDEV)
+        await setupDeployerForGovernance(contracts, provider, fMOVRGrant)
 
         await assertCurrentExpectedState(contracts, provider)
 

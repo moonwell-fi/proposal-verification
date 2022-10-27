@@ -1,4 +1,4 @@
-import {moonwellContracts} from '@moonwell-fi/moonwell.js'
+import {Contracts} from '@moonwell-fi/moonwell.js'
 import {passGovProposal, setupDeployerForGovernance, sleep, startGanache} from "../../src";
 import {ethers} from "ethers";
 
@@ -14,9 +14,9 @@ test("mip-1-verifications", async () => {
     console.log("This ganache chain will automatically be killed when this program ends.")
     console.log()
 
-    const contracts = moonwellContracts.moonbeam
+    const contracts = Contracts.moonbeam
 
-    const forkedChainProcess = await startGanache(contracts, FORK_BLOCK, [wellTreasuryAddress])
+    const forkedChainProcess = await startGanache(contracts, FORK_BLOCK, 'https://rpc.api.moonbeam.network', [wellTreasuryAddress])
 
     console.log("Waiting 5 seconds for chain to bootstrap...")
     await sleep(5)
