@@ -12,7 +12,7 @@ build:
 
 bash:
 	docker run --rm -it \
-		-v $$(pwd)/../:$$(pwd)/../ \
+		-v $$(pwd):$$(pwd) \
 		--workdir $$(pwd) \
 		$(TAG) \
 		bash
