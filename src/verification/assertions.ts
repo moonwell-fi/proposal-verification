@@ -1,7 +1,7 @@
 import {ethers} from "ethers";
 import BigNumber from "bignumber.js";
 import {ContractBundle, Market} from "@moonwell-fi/moonwell.js";
-import { percentTo18DigitMantissa } from './index'
+import {govTokenTicker, nativeTicker, percentTo18DigitMantissa} from "./index";
 
 export async function assertRoundedWellBalance(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, targetAddress: string, name: string, balance: number){
   const wellToken = new ethers.Contract(
@@ -17,14 +17,14 @@ export async function assertRoundedWellBalance(contracts: ContractBundle, provid
   const roundedBalance = wellBalance.div(1e18).integerValue()
 
   if (roundedBalance.isEqualTo(balance)){
-    console.log(`    ✅  The ${name} address has ${balance.toLocaleString()} WELL`)
+    console.log(`    ✅  The ${name} address has ${balance.toLocaleString()} ${govTokenTicker(contracts)}`)
   } else {
-    throw new Error(`The ${name} address (${targetAddress}) was expected to have ${balance.toLocaleString()} WELL, found ${parseInt(roundedBalance.toFixed()).toLocaleString()} WELL instead`)
+    throw new Error(`The ${name} address (${targetAddress}) was expected to have ${balance.toLocaleString()} ${govTokenTicker(contracts)}, found ${parseInt(roundedBalance.toFixed()).toLocaleString()} ${govTokenTicker(contracts)} instead`)
   }
 
 }
 
-export async function assertDexRewarderRewardsPerSec(DEX_REWARDER: string, provider: ethers.providers.JsonRpcProvider, poolID: number, rewardSlot: number, expectedRewardsPerSec: BigNumber){
+export async function assertDexRewarderRewardsPerSec(DEX_REWARDER: string, provider: ethers.providers.JsonRpcProvider, poolID: number, rewardSlot: number, expectedRewardsPerSec: BigNumber, ticker = "(WELL OR MFAM)"){
   console.log("    [-] Checking dex rewarder...")
   const dexRewarder = new ethers.Contract(
     DEX_REWARDER,
@@ -41,14 +41,14 @@ export async function assertDexRewarderRewardsPerSec(DEX_REWARDER: string, provi
   const rewardsPerSec = new BigNumber(newRewardInfo.rewardPerSec.toString())
 
   if (rewardsPerSec.isEqualTo(expectedRewardsPerSec)){
-    console.log(`        ✅  The dex rewarder emissions will be set to ${rewardsPerSec.div(1e18).toFixed(18)} WELL/sec on ${new Date(newRewardInfo.startTimestamp * 1000)}`)
+    console.log(`        ✅  The dex rewarder emissions will be set to ${rewardsPerSec.div(1e18).toFixed(18)} ${ticker}/sec on ${new Date(newRewardInfo.startTimestamp * 1000)}`)
   } else {
-    throw new Error(`The Dex Rewarder was expected to have an emission speed of ${expectedRewardsPerSec.div(1e18).toFixed(18)} WELL/sec, found ${rewardsPerSec.div(1e18).toFixed(18)} WELL/sec instead`)
+    throw new Error(`The Dex Rewarder was expected to have an emission speed of ${expectedRewardsPerSec.div(1e18).toFixed(18)} ${ticker}/sec, found ${rewardsPerSec.div(1e18).toFixed(18)} ${ticker}/sec instead`)
   }
   // poolRewardsPerSec
 }
 
-export async function assertSTKWellEmissionsPerSecond(STKWELL: string, provider: ethers.providers.JsonRpcProvider, expectedRewardsPerSec: BigNumber){
+export async function assertSTKWellEmissionsPerSecond(STKWELL: string, provider: ethers.providers.JsonRpcProvider, expectedRewardsPerSec: BigNumber, ticker = "(WELL or MFAM)"){
   const stkWELL = new ethers.Contract(
     STKWELL,
     require('../abi/StakedWell.json').abi,
@@ -60,14 +60,14 @@ export async function assertSTKWellEmissionsPerSecond(STKWELL: string, provider:
   const rewardsPerSec = new BigNumber(currentRewardInfo.emissionPerSecond.toString())
 
   if (rewardsPerSec.isEqualTo(expectedRewardsPerSec)){
-    console.log(`    ✅  The stkWELL emissions are set to ${rewardsPerSec.div(1e18).toFixed(18)} WELL/sec`)
+    console.log(`    ✅  The stkWELL emissions are set to ${rewardsPerSec.div(1e18).toFixed(18)} ${ticker}/sec`)
   } else {
-    throw new Error(`The stkWELL emissions were expected to be ${expectedRewardsPerSec.div(1e18).toFixed(18)} WELL/sec, found ${rewardsPerSec.div(1e18).toFixed(18)} WELL/sec instead`)
+    throw new Error(`The stkWELL emissions were expected to be ${expectedRewardsPerSec.div(1e18).toFixed(18)} ${ticker}/sec, found ${rewardsPerSec.div(1e18).toFixed(18)} ${ticker}/sec instead`)
   }
   // poolRewardsPerSec
 }
 
-export async function assertMarketWellRewardSpeed(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, assetName: string, expectedSupplySpeed: BigNumber, expectedBorrowSpeed: BigNumber){
+export async function assertMarketGovTokenRewardSpeed(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, assetName: string, expectedSupplySpeed: BigNumber, expectedBorrowSpeed: BigNumber){
   const unitroller = new ethers.Contract(
     contracts.COMPTROLLER,
     require('../abi/Comptroller.json').abi,
@@ -78,17 +78,42 @@ export async function assertMarketWellRewardSpeed(contracts: ContractBundle, pro
   const supplyRewardSpeed = new BigNumber((await unitroller.supplyRewardSpeeds(0, contracts.MARKETS[assetName].mTokenAddress)).toString())
 
   if (supplyRewardSpeed.isEqualTo(expectedSupplySpeed)){
-    console.log(`    ✅  The supply speed on the ${assetName} market is set to ${supplyRewardSpeed.div(1e18).toFixed(18)} WELL/sec`)
+    console.log(`    ✅  The SUPPLY speed on the ${assetName} market is set to ${supplyRewardSpeed.div(1e18).toFixed(18)} ${govTokenTicker(contracts)}/sec`)
   } else {
-    throw new Error(`The supply speed for ${assetName} was expected to be ${expectedSupplySpeed.div(1e18).toFixed(18)} WELL/sec, found ${supplyRewardSpeed.div(1e18).toFixed(18)} WELL/sec instead`)
+    throw new Error(`The supply speed for ${assetName} was expected to be ${expectedSupplySpeed.div(1e18).toFixed(18)} ${govTokenTicker(contracts)}/sec, found ${supplyRewardSpeed.div(1e18).toFixed(18)} ${govTokenTicker(contracts)}/sec instead`)
   }
 
   const borrowRewardSpeed = new BigNumber((await unitroller.borrowRewardSpeeds(0, contracts.MARKETS[assetName].mTokenAddress)).toString())
 
   if (borrowRewardSpeed.isEqualTo(expectedBorrowSpeed)){
-    console.log(`    ✅  The borrow speed on the ${assetName} market is set to ${borrowRewardSpeed.div(1e18).toFixed(18)} WELL/sec`)
+    console.log(`    ✅  The BORROW speed on the ${assetName} market is set to ${borrowRewardSpeed.div(1e18).toFixed(18)} ${govTokenTicker(contracts)}/sec`)
   } else {
-    throw new Error(`The borrow speed for ${assetName} was expected to be ${expectedBorrowSpeed.div(1e18).toFixed(18)} WELL/sec, found ${borrowRewardSpeed.div(1e18).toFixed(18)} WELL/sec instead`)
+    throw new Error(`The borrow speed for ${assetName} was expected to be ${expectedBorrowSpeed.div(1e18).toFixed(18)} ${govTokenTicker(contracts)}/sec, found ${borrowRewardSpeed.div(1e18).toFixed(18)} ${govTokenTicker(contracts)}/sec instead`)
+  }
+}
+
+export async function assertMarketNativeTokenRewardSpeed(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, assetName: string, expectedSupplySpeed: BigNumber, expectedBorrowSpeed: BigNumber){
+  const unitroller = new ethers.Contract(
+      contracts.COMPTROLLER,
+      require('../abi/Comptroller.json').abi,
+      provider
+  )
+
+  // 0 = WELL/MFAM, 1 = GLMR/MOVR
+  const supplyRewardSpeed = new BigNumber((await unitroller.supplyRewardSpeeds(1, contracts.MARKETS[assetName].mTokenAddress)).toString())
+
+  if (supplyRewardSpeed.isEqualTo(expectedSupplySpeed)){
+    console.log(`    ✅  The SUPPLY speed on the ${assetName} market is set to ${supplyRewardSpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec`)
+  } else {
+    throw new Error(`The supply speed for ${assetName} was expected to be ${expectedSupplySpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec, found ${supplyRewardSpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec instead`)
+  }
+
+  const borrowRewardSpeed = new BigNumber((await unitroller.borrowRewardSpeeds(1, contracts.MARKETS[assetName].mTokenAddress)).toString())
+
+  if (borrowRewardSpeed.isEqualTo(expectedBorrowSpeed)){
+    console.log(`    ✅  The BORROW speed on the ${assetName} market is set to ${borrowRewardSpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec`)
+  } else {
+    throw new Error(`The borrow speed for ${assetName} was expected to be ${expectedBorrowSpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec, found ${borrowRewardSpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec instead`)
   }
 }
 
@@ -184,6 +209,24 @@ export async function assertMarketCFIsZero(provider: ethers.providers.JsonRpcPro
 
   if (!marketData.collateralFactorMantissa.isZero()){
     throw new Error(`The ${market.name} market has that is NONZERO (${mantissaFormatted.times(100)}%), which was not expected!`)
+  } else {
+    console.log(`    ✅ ${market.name} Collateral Factor is currently set to ${mantissaFormatted.times(100)}%`)
+  }
+}
+
+export async function assertMarketCFEqualsPercent(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market, expectedPercent: number){
+  const unitroller = new ethers.Contract(
+      contracts.COMPTROLLER,
+      require('../abi/Comptroller.json').abi,
+      provider
+  )
+
+  const marketData = await unitroller.markets(market.mTokenAddress)
+
+  const mantissaFormatted = new BigNumber(marketData.collateralFactorMantissa.toString()).div(1e18)
+
+  if (!mantissaFormatted.times(100).isEqualTo(expectedPercent)){
+    throw new Error(`The ${market.name} market has that DOES NOT EQUAL (${expectedPercent}%), which was not expected!`)
   } else {
     console.log(`    ✅ ${market.name} Collateral Factor is currently set to ${mantissaFormatted.times(100)}%`)
   }

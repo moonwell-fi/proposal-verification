@@ -1,3 +1,3 @@
 FROM node:lts
 
-RUN npm install -g ganache-cli
+RUN npm install -g ganache
