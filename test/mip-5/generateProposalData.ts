@@ -3,7 +3,7 @@ import {BigNumber as EthersBigNumber} from "@ethersproject/bignumber/lib/bignumb
 import {ContractBundle} from "@moonwell-fi/moonwell.js";
 import {addProposalToPropData} from "../../src";
 import BigNumber from "bignumber.js";
-import {DEX_REWARDER, ECOSYSTEM_RESERVE, fMOVRGrant, SENDAMTS} from "./vars";
+import {DEX_REWARDER, ECOSYSTEM_RESERVE, fMOVRGrant, SENDAMTS, SUBMITTER_WALLET} from "./vars";
 
 export async function generateProposalData(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider){
     const mantissa = EthersBigNumber.from(10).pow(18)
@@ -223,6 +223,16 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
         ],
         proposalData
     )
+
+    await addProposalToPropData(mfamToken, 'transferFrom',
+        [
+            fMOVRGrant,
+            SUBMITTER_WALLET,
+            EthersBigNumber.from(SENDAMTS['SUBMITTER_WALLET']).mul(mantissa)
+        ],
+        proposalData
+    )
+
 
     return proposalData
 }

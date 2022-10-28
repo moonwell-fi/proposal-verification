@@ -5,7 +5,14 @@ import {
     assertSTKWellEmissionsPerSecond
 } from "../../src/verification/assertions";
 import {ContractBundle} from "@moonwell-fi/moonwell.js";
-import {DEX_REWARDER, ECOSYSTEM_RESERVE, EXPECTED_STARTING_MFAM_HOLDINGS, fMOVRGrant, SENDAMTS} from "./vars";
+import {
+    DEX_REWARDER,
+    ECOSYSTEM_RESERVE,
+    EXPECTED_STARTING_MFAM_HOLDINGS,
+    fMOVRGrant,
+    SENDAMTS,
+    SUBMITTER_WALLET
+} from "./vars";
 import BigNumber from "bignumber.js";
 
 export async function assertExpectedEndState(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider){
@@ -15,7 +22,7 @@ export async function assertExpectedEndState(contracts: ContractBundle, provider
     await assertRoundedWellBalance(contracts, provider,
         fMOVRGrant,
         'F-MOVR-GRANT',
-        EXPECTED_STARTING_MFAM_HOLDINGS['F-MOVR-GRANT'] - SENDAMTS['ECOSYSTEM_RESERVE'] - SENDAMTS['COMPTROLLER'] - SENDAMTS['DEX_REWARDER']
+        EXPECTED_STARTING_MFAM_HOLDINGS['F-MOVR-GRANT'] - SENDAMTS['ECOSYSTEM_RESERVE'] - SENDAMTS['COMPTROLLER'] - SENDAMTS['DEX_REWARDER'] - SENDAMTS['SUBMITTER_WALLET']
     )
 
     // Assert that the ECOSYSTEM_RESERVE ends with an expected amt
@@ -37,6 +44,13 @@ export async function assertExpectedEndState(contracts: ContractBundle, provider
         DEX_REWARDER,
         'DEX_REWARDER',
         EXPECTED_STARTING_MFAM_HOLDINGS['DEX_REWARDER'] + SENDAMTS['DEX_REWARDER'] - 1 // -1 for rounding errors
+    )
+
+    // Assert that the DEX_REWARDER ends with an expected amt
+    await assertRoundedWellBalance(contracts, provider,
+        SUBMITTER_WALLET,
+        'SUBMITTER_WALLET',
+        EXPECTED_STARTING_MFAM_HOLDINGS['SUBMITTER_WALLET'] + SENDAMTS['SUBMITTER_WALLET']
     )
 
     // Assert current reward speeds for DEX_REWARDER

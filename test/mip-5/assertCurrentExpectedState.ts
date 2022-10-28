@@ -5,9 +5,10 @@ import {
     assertRoundedWellBalance,
     assertSTKWellEmissionsPerSecond
 } from "../../src/verification/assertions";
-import {DEX_REWARDER, ECOSYSTEM_RESERVE, EXPECTED_STARTING_MFAM_HOLDINGS, fMOVRGrant} from "./vars";
+import {DEX_REWARDER, ECOSYSTEM_RESERVE, EXPECTED_STARTING_MFAM_HOLDINGS, fMOVRGrant, SUBMITTER_WALLET} from "./vars";
 import {STKWELL} from "../mip-2/vars";
 import BigNumber from "bignumber.js";
+import {govTokenTicker} from "../../src";
 
 export async function assertCurrentExpectedState(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider){
     console.log("[+] Asserting market configurations are in an expected state BEFORE proposal")
@@ -17,6 +18,13 @@ export async function assertCurrentExpectedState(contracts: ContractBundle, prov
         fMOVRGrant,
         'F-MOVR-GRANT',
         EXPECTED_STARTING_MFAM_HOLDINGS['F-MOVR-GRANT']
+    )
+
+    // Assert that SUBMITTER_WALLET starts with an expected amt
+    await assertRoundedWellBalance(contracts, provider,
+        SUBMITTER_WALLET,
+        'SUBMITTER_WALLET',
+        EXPECTED_STARTING_MFAM_HOLDINGS['SUBMITTER_WALLET']
     )
 
     // Assert that the ECOSYSTEM_RESERVE starts with an expected amt
@@ -44,12 +52,14 @@ export async function assertCurrentExpectedState(contracts: ContractBundle, prov
     await assertDexRewarderRewardsPerSec(DEX_REWARDER, provider,
         11,
         21,
-        new BigNumber('5.315678137644940000').times(1e18)
+        new BigNumber('5.315678137644940000').times(1e18),
+        govTokenTicker(contracts)
     )
 
     // Assert current WELL emissions
     await assertSTKWellEmissionsPerSecond(contracts.SAFETY_MODULE, provider,
-        new BigNumber('1.3608136032371').times(1e18)
+        new BigNumber('1.3608136032371').times(1e18),
+        govTokenTicker(contracts)
     )
 
     // Assert market speeds before adjustment
