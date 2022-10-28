@@ -376,7 +376,13 @@ export async function assertChainlinkFeedIsNotRegistered(provider: ethers.provid
   console.log(`    ✅ No Chainlink Feed registered`)
 }
 
-
+/**
+ * Assert Chainlink returns a non-zero price for the asset backing the given mToken.
+ * 
+ * @param provider An ethers provider.
+ * @param contracts A contract bundle.
+ * @param mtokenAddress The market to inspect.
+ */
  export async function assertChainlinkPricePresent(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, mtokenAddress: string) {
   const oracle = new ethers.Contract(
     contracts.ORACLE,
@@ -435,6 +441,13 @@ export async function assertTimelockIsAdminOfMarket(
   await assertStorageAddress(market, contracts.TIMELOCK, 'admin')
 }
 
+/**
+ * Assert the collateral factor of a market is the expected value.
+ * 
+ * @param provider An ethers provider.
+ * @param marketAddress The address of the market.
+ * @param expectedCollateralFactor The expected value.
+ */
 export async function assertCF(
   provider: ethers.providers.JsonRpcProvider, 
   contracts: ContractBundle,
@@ -448,9 +461,7 @@ export async function assertCF(
   )
 
   const marketData = await comptroller.markets(marketAddress)
-  console.log(marketData)
   const collateralFactor = marketData.collateralFactorMantissa
-  console.log(collateralFactor)
   const expected = percentTo18DigitMantissa(expectedCollateralFactor)
   if (!collateralFactor.eq(expected)) {
     throw new Error(`Unexpected Collateral Factor value in market ${marketAddress}. Expected: ${expected}, Actual: ${collateralFactor.toString()}`)
@@ -458,6 +469,13 @@ export async function assertCF(
   console.log(`    ✅ Collateral Factor share set correctly.`)
 }
 
+/**
+ * Assert the reserve factor of a market is the expected value.
+ * 
+ * @param provider An ethers provider.
+ * @param marketAddress The address of the market.
+ * @param expectedRFPercent The expected value.
+ */
 export async function assertMarketRF(
   provider: ethers.providers.JsonRpcProvider, 
   marketAddress: string,
@@ -477,6 +495,13 @@ export async function assertMarketRF(
   console.log(`    ✅ Reserve Factor set correctly.`)
 }
 
+/**
+ * Assert the protocol seize share in a market is the expected value.
+ * 
+ * @param provider An ethers provider.
+ * @param marketAddress The address of the market.
+ * @param expectedSeizeSharePercent The expected value.
+ */
 export async function assertMarketSeizeShare(
   provider: ethers.providers.JsonRpcProvider, 
   marketAddress: string,
@@ -496,6 +521,13 @@ export async function assertMarketSeizeShare(
   console.log(`    ✅ Protocol Seize share set correctly.`)
 }
 
+/**
+ * Assert a string in storage is the expected string
+ * 
+ * @param contract A contract instance to introspect
+ * @param expected The expected value
+ * @param methodName The view method name to call on the contract to get the actual value.
+ */
 export async function assertStorageString(
   contract: any, 
   expected: string, 
@@ -508,6 +540,13 @@ export async function assertStorageString(
     console.log(`    ✅ ${methodName} set correctly.`)
 }
 
+/**
+ * Assert an address in storage is the expected address
+ * 
+ * @param contract A contract instance to introspect
+ * @param expected The expected value
+ * @param methodName The view method name to call on the contract to get the actual value.
+ */
 export async function assertStorageAddress(
   contract: any, 
   expected: string, 
@@ -520,6 +559,13 @@ export async function assertStorageAddress(
   console.log(`    ✅ ${methodName} address set correctly.`)
 }
 
+/**
+ * Assert two addresses match.
+ * 
+ * @param a The first address.
+ * @param b The second address.
+ * @returns A boolean indicating whether they match.
+ */
 function addressesMatch(a: string, b: string) {
   if (!a.startsWith('0x') || !b.startsWith('0x')) {
     throw new Error(`Invalid addresss comparison, both must start with '0x'! Inputs: ${a}, ${b}`)

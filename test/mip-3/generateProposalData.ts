@@ -23,8 +23,8 @@ export const generateProposalData = async (
   )
 
   const deploymentConfiguration = {
+    networkName: 'moonbeam',
     deployer,
-    contractFactory
   }
   const marketConfiguration = {
     tokenAddress,

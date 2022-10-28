@@ -72,52 +72,6 @@ export async function passGovProposal(contracts: ContractBundle, provider: ether
     const executeResult = await governor.execute(proposalID)
     await executeResult.wait()
 
-    const receipt = await provider.getTransactionReceipt(executeResult.hash)
-
-    console.log(`Receipt...`)
-    console.log(receipt) 
-
-    console.log('logs...')
-
-    const comptroller = new ethers.Contract(
-        contracts.COMPTROLLER,
-        require('../abi/Comptroller.json').abi,
-        provider
-      )
-      const oracle = new ethers.Contract(
-        contracts.ORACLE,
-        require('../abi/ChainlinkOracle.json').abi,
-        provider
-      )
-
-      const token = new ethers.Contract(
-        proposalData.targets[2],
-        require('../../src/abi/MErc20Delegator.json').abi,
-        provider
-      )
-    
-
-      console.log('i am attaching to... ' + contracts.COMPTROLLER)
-    for (let i = 0; i < receipt.logs.length; i++ ) {
-        const log = receipt.logs[i]
-        if (log.address.toUpperCase() === contracts.COMPTROLLER.toUpperCase()) {
-            console.log("COMPTROLLER")
-            console.log(comptroller.interface.parseLog(log))
-        } else if (log.address.toUpperCase() === "0xED301cd3EB27217BDB05C4E9B820a8A3c8B665f9".toUpperCase()) {
-            console.log("ORACLE")
-            console.log(oracle.interface.parseLog(log))
-        } else if (log.address.toUpperCase() === "0x3a9249d70dCb4A4E9ef4f3AF99a3A130452ec19B".toUpperCase()) {
-            console.log("TIMELOCK")
-            console.log(timelock.interface.parseLog(log))
-        } else if (log.address.toUpperCase() === "0xfc4DFB17101A12C5CEc5eeDd8E92B5b16557666d".toUpperCase()) {
-            console.log("GOVERNOR")
-            console.log(governor.interface.parseLog(log))
-        } else {
-            console.log("TOKEN") 
-            console.log(token.interface.parseLog(log))
-        }   
-    }
-
     console.log(`[+] Executed in hash: ${executeResult.hash}`)
 }
 
@@ -144,32 +98,6 @@ export async function setupDeployerForGovernance(contracts: ContractBundle, prov
     })
     await fundParamsMsigResult.wait(1)
     console.log(`[+] Funded wellTreasury (${await wellTreasury.getAddress()}) in ${fundParamsMsigResult.hash}`)
-
-    // Fund the Break glass msig 
-    const fundBGMsig = await deployer.sendTransaction({
-        to: "0x5402447a0db03eee98c98b924f7d346bd19cdd17",
-        value: ethers.utils.parseEther("1.0")
-    })
-    await fundBGMsig.wait(1)
-    console.log(`[+] Funded bg msig in ${fundBGMsig.hash}`)
-
-    const fundGovRetMsig = await deployer.sendTransaction({
-        to: "0xffa353dacd27071217ea80d3149c9d500b0e9a38",
-        value: ethers.utils.parseEther("1.0")
-    })
-    await fundGovRetMsig.wait(1)
-    console.log(`[+] Funded gov ret msig in ${fundGovRetMsig}`)
-
-
-    // Fund the break glass multis
-
-    // // Fund the timelock treasury
-    // const fundTimelockResult = await deployer.sendTransaction({
-    //     to: "0x3a9249d70dCb4A4E9ef4f3AF99a3A130452ec19B",
-    //     value: ethers.utils.parseEther("1.0")
-    // })
-    // await fundTimelockResult.wait(1)
-    // console.log(`[+] Funded timelock (${await wellTreasury.getAddress()}) in ${fundTimelockResult.hash}`)    
 
     const govToken = new ethers.Contract(
         contracts.GOV_TOKEN,
