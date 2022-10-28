@@ -29,7 +29,12 @@ jobs:
         run: npm ci
 
       - name: Install ganache-cli
-        run: npm install -g ganache-cli
+        run: npm install -g ganache
 
       - name: Run Tests
         run: npm test
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: "MIP Run Outputs"
+          path: artifacts/ # or path/to/artifact

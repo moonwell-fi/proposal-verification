@@ -1,6 +1,18 @@
 import {Contract, ethers} from "ethers";
 import {BigNumber as EthersBigNumber} from "ethers";
-import {ContractBundle} from '@moonwell-fi/moonwell.js'
+import {ContractBundle, Market, Contracts} from '@moonwell-fi/moonwell.js'
+import {
+    assertMarketGovTokenRewardSpeed,
+    assertMarketNativeTokenRewardSpeed,
+    assertRoundedWellBalance
+} from "./assertions";
+import BigNumber from "bignumber.js";
+import {ECOSYSTEM_RESERVE, EXPECTED_STARTING_WELL_HOLDINGS} from "../../test/mip-6/vars";
+
+export enum REWARD_TYPES {
+    GOVTOKEN,
+    NATIVE
+}
 
 export type ProposalData = {
     targets: string[]
@@ -9,13 +21,29 @@ export type ProposalData = {
     callDatas: string[]
 }
 
-export async function passGovProposal(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, proposalData: ProposalData){
+export type SupplyAndBorrowData = {
+    expectedSupply: BigNumber,
+    expectedBorrow: BigNumber
+}
+
+export type MarketRewardMap = {
+    [ticker:string]: {
+        [RewardType in REWARD_TYPES]?: SupplyAndBorrowData
+    }
+}
+
+export type TokenHoldingsMap = {
+    [key:string]: number
+}
+
+
+export async function passGovProposal(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, proposalData: ProposalData, signerAddressOrIndex: number | string = 0){
     console.log("[+] Submitting the following proposal to governance\n", JSON.stringify(proposalData, null ,2), '\n======')
 
     const governor = new ethers.Contract(
         contracts.GOVERNOR,
         require("../abi/MoonwellGovernorArtemis.json").abi,
-        provider.getSigner(0) // Deployer
+        provider.getSigner(signerAddressOrIndex) // Deployer
     )
 
     const proposalResult = await governor.propose(
@@ -92,12 +120,10 @@ export async function setupDeployerForGovernance(contracts: ContractBundle, prov
     const deployer = await provider.getSigner(0)
 
     // Fund the WELL treasury
-    const fundParamsMsigResult = await deployer.sendTransaction({
-        to: wellTreasuryAddress,
-        value: ethers.utils.parseEther("1.0")
-    })
-    await fundParamsMsigResult.wait(1)
-    console.log(`[+] Funded wellTreasury (${await wellTreasury.getAddress()}) in ${fundParamsMsigResult.hash}`)
+    await provider.send('evm_setAccountBalance',
+        [wellTreasuryAddress, 1e18]
+    )
+    console.log(`[+] Funded wellTreasury (${await wellTreasury.getAddress()}) with 1 token`)
 
     const govToken = new ethers.Contract(
         contracts.GOV_TOKEN,
@@ -105,33 +131,51 @@ export async function setupDeployerForGovernance(contracts: ContractBundle, prov
         provider
     )
 
+    let amountToTransfer
+    if (contracts.GOVERNOR === Contracts.moonriver.GOVERNOR){
+        // Floating quorum, go get the latest
+        const governor = new ethers.Contract(
+            contracts.GOVERNOR,
+            require('../abi/MoonwellGovernorApollo.json'),
+            provider
+        )
+        amountToTransfer = (await governor.getQuorum()).add(EthersBigNumber.from(1).mul(mantissa))
+    } else {
+        const governor = new ethers.Contract(
+            contracts.GOVERNOR,
+            require('../abi/MoonwellGovernorArtemis.json').abi,
+            provider
+        )
+        amountToTransfer = (await governor.quorumVotes()).add(EthersBigNumber.from(1).mul(mantissa))
+    }
+
     const currentBalance = await govToken.balanceOf(await deployer.getAddress())
     if (!currentBalance.isZero()){
-        throw new Error("Was expecting deployer currentBalance to be 0 WELL. Currently:", currentBalance.toString())
+        throw new Error(`Was expecting deployer currentBalance to be 0 ${govTokenTicker(contracts)}. Currently:`, currentBalance.toString())
     } else {
-        console.log("    ✅ Deployer currentBalance === 0", "WELL")
+        console.log("    ✅ Deployer currentBalance === 0", govTokenTicker(contracts))
     }
 
     const govTokenTransferResult = await govToken
         .connect(wellTreasury)
         .transfer(
             await deployer.getAddress(),
-            EthersBigNumber.from(288_000_001).mul(mantissa),
+            amountToTransfer,
         )
     await govTokenTransferResult.wait()
 
     const newBalance = await govToken.balanceOf(await deployer.getAddress())
     if (newBalance.isZero()){
-        throw new Error("Was expecting deployer currentBalance to be 288M WELL. Currently:", newBalance.toString())
+        throw new Error(`Was expecting deployer currentBalance to be ${amountToTransfer} ${govTokenTicker(contracts)}. Currently:`, newBalance.toString())
     } else {
-        console.log("    ✅ Deployer WELL balance ===", newBalance.div(mantissa).toString(), "WELL")
+        console.log(`    ✅ Deployer ${govTokenTicker(contracts)} balance ===`, newBalance.div(mantissa).toString(), govTokenTicker(contracts))
     }
 
     const govTokenDelegateResult = await govToken
         .connect(deployer)
         .delegate(await deployer.getAddress())
 
-    console.log("[+] Delegated WELL to self in call", govTokenDelegateResult.hash)
+    console.log(`[+] Delegated ${govTokenTicker(contracts)} to self in call`, govTokenDelegateResult.hash)
     await govTokenDelegateResult.wait()
 
     const delegatesResult = await govToken.delegates(await deployer.getAddress())
@@ -148,7 +192,7 @@ export async function setupDeployerForGovernance(contracts: ContractBundle, prov
     if (votingPower.isZero()){
         throw new Error("The deployer has no voting power!")
     } else {
-        console.log("    ✅ Deployer has voting power ===", votingPower.div(mantissa).toString(), 'WELL')
+        console.log("    ✅ Deployer has voting power ===", votingPower.div(mantissa).toString(), govTokenTicker(contracts))
     }
 }
 
@@ -160,18 +204,20 @@ export const sleep = async (pauseDelay: number) => {
     });
 }
 
-export async function startGanache(contracts: ContractBundle, forkBlock: number, unlockAddresses?: string[]){
+export async function startGanache(contracts: ContractBundle, forkBlock: number, rpcURL: string, unlockAddresses?: string[]){
     console.log("=== Launching a Ganache Chain ===");
+
+    // TODO: see if we're running on ganache 6 or 7 :rolling-eyes:
 
     // We unlock the params and upgrades multisig.
     const command = `
-    ganache
-      ${unlockAddresses && unlockAddresses.map(i => '--unlock ' + i).join(' ')} 
-      --fork "https://rpc.api.moonbeam.network"
-      -b 1
-      --default-balance-ether ${ ethers.utils.parseEther("5.0") }
-  `.replace(/\n/g, ' ')
-        .replace(/  +/g, ' ');
+    ganache-cli
+      ${unlockAddresses && unlockAddresses.map(i => '--wallet.unlockedAccounts ' + i).join(' ')} 
+      --fork.url "${rpcURL}"
+      --fork.blockNumber ${forkBlock}
+      --wallet.defaultBalance ${ ethers.utils.parseEther("2.0") }
+    `.replace(/\n/g, ' ')
+     .replace(/  +/g, ' ');
 
     const forkedChainProcess = require('child_process').spawn(command, [], { shell: true, detached: true })
 
@@ -194,4 +240,166 @@ export async function startGanache(contracts: ContractBundle, forkBlock: number,
  */
 export function percentTo18DigitMantissa(percent: number): ethers.BigNumber {
     return EthersBigNumber.from(percent).mul(EthersBigNumber.from("10").pow("16"))
+}
+
+export async function ensureWalletIsFunded(provider: ethers.providers.JsonRpcProvider, walletAddress: string){
+    const wallet = await provider.getSigner(walletAddress)
+    const mantissa = EthersBigNumber.from(1).mul(10).pow(18)
+
+    const walletBalance = await wallet.getBalance()
+    console.log(walletBalance.toString())
+
+    if (walletBalance.isZero()){
+        // Fund the WELL treasury
+        await provider.send('evm_setAccountBalance',
+            [walletAddress, 1e18]
+        )
+        console.log(`[+] Funded wallet (${walletAddress}) with 1 token`)
+    } else {
+        console.log(`[+] Wallet (${walletAddress}) already has ${walletBalance.div(mantissa)} native tokens`)
+    }
+}
+
+export async function replaceXCAssetWithDummyERC20(provider: ethers.providers.JsonRpcProvider, marketToClone: Market, marketToReplace: Market){
+    // Push the code into the address of the xc asset
+    await provider.send('evm_setAccountCode', [
+        marketToReplace.tokenAddress,
+        await provider.getCode(
+            marketToClone.tokenAddress
+        )
+    ])
+
+    // Go clone the first 15 slots, and hope that is sufficient for whatever parameters are accessed as part of
+    // the proposal.
+    //
+    // NOTE: you may need to do other things like set the right data at a specific slot to do things like override
+    // a symbol or decimals or something, check below for an example of doing that.
+    for (const slot of Array.from(Array(15).keys())){
+        // console.log("Cloning storage slot", slot)
+        const marketStorage = await provider.getStorageAt(
+            marketToClone.tokenAddress,
+            EthersBigNumber.from(slot)
+        )
+        // console.log(slot, marketStorage)
+        await provider.send('evm_setAccountStorageAt', [
+            marketToReplace.tokenAddress,
+            ethers.utils.hexZeroPad("0x" + slot.toString(16), 32),
+            ethers.utils.hexZeroPad(marketStorage, 32)
+        ])
+    }
+
+    // Neat parlor trick, if you pass in FRAX on Moonbeam, the `_symbol` is stored in slot 4, and we can set it
+    // to whatever we want. The code below ensures that the `_symbol` returned by xcDOT is correct even while
+    // cloning the FRAX contract
+    // https://moonscan.io/address/0x322e86852e492a7ee17f28a78c663da38fb33bfb#code
+    // Line 498
+    // const marketStorage = await provider.getStorageAt(
+    //     marketToClone.tokenAddress,
+    //     EthersBigNumber.from(4)
+    // )
+    // console.log("marketStorage", marketStorage)
+    // await provider.send('evm_setAccountStorageAt', [
+    //     // Target
+    //     marketToReplace.tokenAddress,
+    //     // Slot
+    //     ethers.utils.hexZeroPad("0x" + (4).toString(16), 32),
+    //     // New Data
+    //     new BigNumber(
+    //         ethers.utils.formatBytes32String('xcDOT')
+    //     )
+    //         .plus('xcDOT'.length * 2) // Storage strings are UTF-8 and have their size encoded into them, so double ascii length and add this to the message
+    //         .toString(16) // Format as a hex string
+    //         .replace(/^/, '0x') // Add 0x prefix
+    // ])
+}
+
+export async function assertMarketRewardState(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, marketRewardMap: MarketRewardMap){
+    for (const [assetTicker, data] of Object.entries(marketRewardMap)){
+        if (data[REWARD_TYPES.GOVTOKEN]){
+            await assertMarketGovTokenRewardSpeed(contracts, provider,
+                assetTicker,
+                data[REWARD_TYPES.GOVTOKEN].expectedSupply,
+                data[REWARD_TYPES.GOVTOKEN].expectedBorrow,
+            )
+        }
+        if (data[REWARD_TYPES.NATIVE]){
+            await assertMarketNativeTokenRewardSpeed(contracts, provider,
+                assetTicker,
+                data[REWARD_TYPES.NATIVE].expectedSupply,
+                data[REWARD_TYPES.NATIVE].expectedBorrow,
+            )
+        }
+    }
+}
+
+export function govTokenTicker(contracts){
+    if (contracts.COMPTROLLER === Contracts.moonriver.COMPTROLLER){
+        return "MFAM"
+    } else {
+        return "WELL"
+    }
+}
+export function nativeTicker(contracts){
+    if (contracts.COMPTROLLER === Contracts.moonriver.COMPTROLLER){
+        return "MOVR"
+    } else {
+        return "GLMR"
+    }
+}
+
+export async function addMarketAdjustementsToProposal(contracts : ContractBundle, unitroller : Contract, proposalData: any, marketRewardMap: MarketRewardMap){
+    // For each market
+    for (const [assetTicker, data] of Object.entries(marketRewardMap)){
+        // And each reward type
+        for (let [assetType, supplyBorrowData] of Object.entries(data)){
+            const ticker = parseInt(assetType) === REWARD_TYPES.GOVTOKEN ? govTokenTicker(contracts) : nativeTicker(contracts)
+            console.log(`    📝 Adding proposal call for \`_setRewardSpeed\` on the ${assetTicker} market with emissions: SUPPLY: ${supplyBorrowData.expectedSupply.div(1e18).toFixed(18)} ${ticker}/sec and BORROW: ${supplyBorrowData.expectedBorrow.div(1e18).toFixed(18)} ${ticker}/sec`)
+            // Add the proposed reward speed
+            await addProposalToPropData(unitroller, '_setRewardSpeed',
+                [
+                    EthersBigNumber.from(assetType), // 0 = WELL, 1 = GLMR
+                    contracts.MARKETS[assetTicker].mTokenAddress,
+                    EthersBigNumber.from(supplyBorrowData.expectedSupply.toFixed()),
+                    EthersBigNumber.from(supplyBorrowData.expectedBorrow.toFixed()),
+                ],
+                proposalData
+            )
+        }
+    }
+}
+
+export async function assertCurrentExpectedGovTokenHoldings(contracts : ContractBundle, provider: ethers.providers.JsonRpcProvider, tokenHoldingsMap: TokenHoldingsMap, nameMap: any){
+    for (const [holderName, amount] of Object.entries(tokenHoldingsMap)) {
+        if (contracts[holderName]){
+            await assertRoundedWellBalance(contracts, provider,
+                contracts[holderName],
+                holderName,
+                amount
+            )
+        } else {
+            await assertRoundedWellBalance(contracts, provider,
+                nameMap[holderName],
+                holderName,
+                amount
+            )
+        }
+    }
+}
+
+export async function assertEndingExpectedGovTokenHoldings(contracts : ContractBundle, provider: ethers.providers.JsonRpcProvider, tokenHoldingsMap: TokenHoldingsMap, sendMap: TokenHoldingsMap, nameMap: any){
+    for (const [holderName, amount] of Object.entries(tokenHoldingsMap)) {
+        if (contracts[holderName]){
+            await assertRoundedWellBalance(contracts, provider,
+                contracts[holderName],
+                holderName,
+                amount + sendMap[holderName]
+            )
+        } else {
+            await assertRoundedWellBalance(contracts, provider,
+                nameMap[holderName],
+                holderName,
+                amount + sendMap[holderName]
+            )
+        }
+    }
 }
