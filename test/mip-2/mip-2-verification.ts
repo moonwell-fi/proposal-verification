@@ -6,6 +6,7 @@ import {
     startGanache
 } from "../../src";
 
+import {Contracts} from '@moonwell-fi/moonwell.js'
 import {generateProposalData} from "./generateProposalData";
 import {assertCurrentExpectedState} from "./assertCurrentExpectedState";
 import {assertExpectedEndState} from "./assertExpectedEndState";
