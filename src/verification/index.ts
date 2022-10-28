@@ -1,7 +1,18 @@
 import {Contract, ethers} from "ethers";
 import {BigNumber as EthersBigNumber} from "ethers";
 import {ContractBundle, Market, Contracts} from '@moonwell-fi/moonwell.js'
+import {
+    assertMarketGovTokenRewardSpeed,
+    assertMarketNativeTokenRewardSpeed,
+    assertRoundedWellBalance
+} from "./assertions";
 import BigNumber from "bignumber.js";
+import {ECOSYSTEM_RESERVE, EXPECTED_STARTING_WELL_HOLDINGS} from "../../test/mip-6/vars";
+
+export enum REWARD_TYPES {
+    GOVTOKEN,
+    NATIVE
+}
 
 export type ProposalData = {
     targets: string[]
@@ -9,6 +20,22 @@ export type ProposalData = {
     signatures: string[]
     callDatas: string[]
 }
+
+export type SupplyAndBorrowData = {
+    expectedSupply: BigNumber,
+    expectedBorrow: BigNumber
+}
+
+export type MarketRewardMap = {
+    [ticker:string]: {
+        [RewardType in REWARD_TYPES]?: SupplyAndBorrowData
+    }
+}
+
+export type TokenHoldingsMap = {
+    [key:string]: number
+}
+
 
 export async function passGovProposal(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, proposalData: ProposalData, signerAddressOrIndex: number | string = 0){
     console.log("[+] Submitting the following proposal to governance\n", JSON.stringify(proposalData, null ,2), '\n======')
@@ -123,9 +150,9 @@ export async function setupDeployerForGovernance(contracts: ContractBundle, prov
 
     const currentBalance = await govToken.balanceOf(await deployer.getAddress())
     if (!currentBalance.isZero()){
-        throw new Error("Was expecting deployer currentBalance to be 0 WELL/MFAM. Currently:", currentBalance.toString())
+        throw new Error(`Was expecting deployer currentBalance to be 0 ${govTokenTicker(contracts)}. Currently:`, currentBalance.toString())
     } else {
-        console.log("    ✅ Deployer currentBalance === 0", "WELL/MFAM")
+        console.log("    ✅ Deployer currentBalance === 0", govTokenTicker(contracts))
     }
 
     const govTokenTransferResult = await govToken
@@ -138,16 +165,16 @@ export async function setupDeployerForGovernance(contracts: ContractBundle, prov
 
     const newBalance = await govToken.balanceOf(await deployer.getAddress())
     if (newBalance.isZero()){
-        throw new Error(`Was expecting deployer currentBalance to be ${amountToTransfer} WELL/MFAM. Currently:`, newBalance.toString())
+        throw new Error(`Was expecting deployer currentBalance to be ${amountToTransfer} ${govTokenTicker(contracts)}. Currently:`, newBalance.toString())
     } else {
-        console.log("    ✅ Deployer WELL/MFAM balance ===", newBalance.div(mantissa).toString(), "WELL/MFAM")
+        console.log(`    ✅ Deployer ${govTokenTicker(contracts)} balance ===`, newBalance.div(mantissa).toString(), govTokenTicker(contracts))
     }
 
     const govTokenDelegateResult = await govToken
         .connect(deployer)
         .delegate(await deployer.getAddress())
 
-    console.log("[+] Delegated WELL/MFAM to self in call", govTokenDelegateResult.hash)
+    console.log(`[+] Delegated ${govTokenTicker(contracts)} to self in call`, govTokenDelegateResult.hash)
     await govTokenDelegateResult.wait()
 
     const delegatesResult = await govToken.delegates(await deployer.getAddress())
@@ -164,7 +191,7 @@ export async function setupDeployerForGovernance(contracts: ContractBundle, prov
     if (votingPower.isZero()){
         throw new Error("The deployer has no voting power!")
     } else {
-        console.log("    ✅ Deployer has voting power ===", votingPower.div(mantissa).toString(), 'WELL/MFAM')
+        console.log("    ✅ Deployer has voting power ===", votingPower.div(mantissa).toString(), govTokenTicker(contracts))
     }
 }
 
@@ -273,4 +300,95 @@ export async function replaceXCAssetWithDummyERC20(provider: ethers.providers.Js
     //         .toString(16) // Format as a hex string
     //         .replace(/^/, '0x') // Add 0x prefix
     // ])
+}
+
+export async function assertMarketRewardState(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, marketRewardMap: MarketRewardMap){
+    for (const [assetTicker, data] of Object.entries(marketRewardMap)){
+        if (data[REWARD_TYPES.GOVTOKEN]){
+            await assertMarketGovTokenRewardSpeed(contracts, provider,
+                assetTicker,
+                data[REWARD_TYPES.GOVTOKEN].expectedSupply,
+                data[REWARD_TYPES.GOVTOKEN].expectedBorrow,
+            )
+        }
+        if (data[REWARD_TYPES.NATIVE]){
+            await assertMarketNativeTokenRewardSpeed(contracts, provider,
+                assetTicker,
+                data[REWARD_TYPES.NATIVE].expectedSupply,
+                data[REWARD_TYPES.NATIVE].expectedBorrow,
+            )
+        }
+    }
+}
+
+export function govTokenTicker(contracts){
+    if (contracts.COMPTROLLER === Contracts.moonriver.COMPTROLLER){
+        return "MFAM"
+    } else {
+        return "WELL"
+    }
+}
+export function nativeTicker(contracts){
+    if (contracts.COMPTROLLER === Contracts.moonriver.COMPTROLLER){
+        return "MOVR"
+    } else {
+        return "GLMR"
+    }
+}
+
+export async function addMarketAdjustementsToProposal(contracts : ContractBundle, unitroller : Contract, proposalData: any, marketRewardMap: MarketRewardMap){
+    // For each market
+    for (const [assetTicker, data] of Object.entries(marketRewardMap)){
+        // And each reward type
+        for (let [assetType, supplyBorrowData] of Object.entries(data)){
+            const ticker = parseInt(assetType) === REWARD_TYPES.GOVTOKEN ? govTokenTicker(contracts) : nativeTicker(contracts)
+            console.log(`    📝 Adding proposal call for \`_setRewardSpeed\` on the ${assetTicker} market with emissions: SUPPLY: ${supplyBorrowData.expectedSupply.div(1e18).toFixed(18)} ${ticker}/sec and BORROW: ${supplyBorrowData.expectedBorrow.div(1e18).toFixed(18)} ${ticker}/sec`)
+            // Add the proposed reward speed
+            await addProposalToPropData(unitroller, '_setRewardSpeed',
+                [
+                    EthersBigNumber.from(assetType), // 0 = WELL, 1 = GLMR
+                    contracts.MARKETS[assetTicker].mTokenAddress,
+                    EthersBigNumber.from(supplyBorrowData.expectedSupply.toFixed()),
+                    EthersBigNumber.from(supplyBorrowData.expectedBorrow.toFixed()),
+                ],
+                proposalData
+            )
+        }
+    }
+}
+
+export async function assertCurrentExpectedGovTokenHoldings(contracts : ContractBundle, provider: ethers.providers.JsonRpcProvider, tokenHoldingsMap: TokenHoldingsMap, nameMap: any){
+    for (const [holderName, amount] of Object.entries(tokenHoldingsMap)) {
+        if (contracts[holderName]){
+            await assertRoundedWellBalance(contracts, provider,
+                contracts[holderName],
+                holderName,
+                amount
+            )
+        } else {
+            await assertRoundedWellBalance(contracts, provider,
+                nameMap[holderName],
+                holderName,
+                amount
+            )
+        }
+    }
+}
+
+export async function assertEndingExpectedGovTokenHoldings(contracts : ContractBundle, provider: ethers.providers.JsonRpcProvider, tokenHoldingsMap: TokenHoldingsMap, sendMap: TokenHoldingsMap, nameMap: any){
+    for (const [holderName, amount] of Object.entries(tokenHoldingsMap)) {
+        if (contracts[holderName]){
+            await assertRoundedWellBalance(contracts, provider,
+                contracts[holderName],
+                holderName,
+                amount + sendMap[holderName]
+            )
+        } else {
+            await assertRoundedWellBalance(contracts, provider,
+                nameMap[holderName],
+                holderName,
+                amount + sendMap[holderName]
+            )
+        }
+    }
 }
