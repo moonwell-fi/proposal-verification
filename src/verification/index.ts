@@ -1,6 +1,6 @@
 import {Contract, ethers} from "ethers";
 import {BigNumber as EthersBigNumber} from "ethers";
-import {ContractBundle, Market, Contracts} from '@moonwell-fi/moonwell.js'
+import {ContractBundle, Market, Contracts, ProposalData} from '@moonwell-fi/moonwell.js'
 import {
     assertMarketGovTokenRewardSpeed,
     assertMarketNativeTokenRewardSpeed,
@@ -12,13 +12,6 @@ import {ECOSYSTEM_RESERVE, EXPECTED_STARTING_WELL_HOLDINGS} from "../../test/mip
 export enum REWARD_TYPES {
     GOVTOKEN,
     NATIVE
-}
-
-export type ProposalData = {
-    targets: string[]
-    values: number[]
-    signatures: string[]
-    callDatas: string[]
 }
 
 export type SupplyAndBorrowData = {

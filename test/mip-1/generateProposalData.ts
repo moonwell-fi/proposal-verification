@@ -1,7 +1,6 @@
 import {ethers} from "ethers";
-import {ProposalData} from "../../src";
 import {BigNumber as EthersBigNumber} from "@ethersproject/bignumber/lib/bignumber";
-import {ContractBundle} from "@moonwell-fi/moonwell.js";
+import {ContractBundle, ProposalData} from "@moonwell-fi/moonwell.js";
 
 export async function generateProposalData(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider){
     const unitroller = new ethers.Contract(

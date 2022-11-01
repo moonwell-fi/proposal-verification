@@ -2,7 +2,7 @@ import {ethers} from "ethers";
 import {BigNumber as EthersBigNumber} from "@ethersproject/bignumber/lib/bignumber";
 import {addProposalToPropData} from "../../src";
 import BigNumber from "bignumber.js";
-import {ContractBundle} from "@moonwell-fi/moonwell.js";
+import {ContractBundle, ProposalData} from "@moonwell-fi/moonwell.js";
 import {
     DEX_REWARDER,
     ECOSYSTEM_RESERVE,
@@ -17,7 +17,7 @@ import {
 export async function generateProposalData(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider){
     const mantissa = EthersBigNumber.from(10).pow(18)
 
-    const proposalData: any = {
+    const proposalData: ProposalData = {
         targets: [],
         values: [],
         signatures: [],
