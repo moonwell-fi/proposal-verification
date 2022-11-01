@@ -1,4 +1,4 @@
-import { deployAndWireMarket } from '../../market-deployer/src/index'
+import { deployAndWireMarket } from '@moonwell-fi/market-deployer'
 import {ethers} from "ethers";
 
 
