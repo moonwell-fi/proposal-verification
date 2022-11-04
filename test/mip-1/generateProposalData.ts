@@ -3,11 +3,9 @@ import {BigNumber as EthersBigNumber} from "@ethersproject/bignumber/lib/bignumb
 import {ContractBundle, ProposalData} from "@moonwell-fi/moonwell.js";
 
 export async function generateProposalData(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider){
-    const unitroller = new ethers.Contract(
-        contracts.COMPTROLLER,
-        require('../../src/abi/Comptroller.json').abi,
+    const unitroller = contracts.COMPTROLLER.getContract().connect(
         provider
-    )
+    )  
 
     const proposalData: ProposalData = {
         targets: [],

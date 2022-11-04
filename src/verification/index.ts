@@ -1,6 +1,6 @@
 import {Contract, ethers} from "ethers";
 import {BigNumber as EthersBigNumber} from "ethers";
-import {ContractBundle, Market, Contracts, ProposalData} from '@moonwell-fi/moonwell.js'
+import {ContractBundle, Market, Contracts, ProposalData, getNativeTokenSymbol, getGovernanceTokenSymbol} from '@moonwell-fi/moonwell.js'
 import {
     assertMarketGovTokenRewardSpeed,
     assertMarketNativeTokenRewardSpeed,
@@ -33,11 +33,7 @@ export type TokenHoldingsMap = {
 export async function passGovProposal(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, proposalData: ProposalData, signerAddressOrIndex: number | string = 0){
     console.log("[+] Submitting the following proposal to governance\n", JSON.stringify(proposalData, null ,2), '\n======')
 
-    const governor = new ethers.Contract(
-        contracts.GOVERNOR,
-        require("../abi/MoonwellGovernorArtemis.json").abi,
-        provider.getSigner(signerAddressOrIndex) // Deployer
-    )
+    const governor = contracts.GOVERNOR.getContract().connect(provider.getSigner(signerAddressOrIndex))
 
     const proposalResult = await governor.propose(
         proposalData.targets,
@@ -78,9 +74,7 @@ export async function passGovProposal(contracts: ContractBundle, provider: ether
     await queueResult.wait()
     console.log(`[+] Queued for Execution in Hash: ${queueResult.hash}`)
 
-    const timelock = new ethers.Contract(
-        contracts.TIMELOCK,
-        require("../abi/Timelock.json").abi,
+    const timelock = contracts.TIMELOCK.getContract().connect(
         provider
     )
 
@@ -117,35 +111,31 @@ export async function setupDeployerForGovernance(contracts: ContractBundle, prov
     )
     console.log(`[+] Funded wellTreasury (${await wellTreasury.getAddress()}) with 1 token`)
 
-    const govToken = new ethers.Contract(
-        contracts.GOV_TOKEN,
-        require('../abi/Well.json').abi,
+    const govToken = contracts.GOV_TOKEN.getContract().connect(
         provider
     )
 
     let amountToTransfer
-    if (contracts.GOVERNOR === Contracts.moonriver.GOVERNOR){
-        // Floating quorum, go get the latest
-        const governor = new ethers.Contract(
-            contracts.GOVERNOR,
-            require('../abi/MoonwellGovernorApollo.json'),
-            provider
-        )
-        amountToTransfer = (await governor.getQuorum()).add(EthersBigNumber.from(1).mul(mantissa))
-    } else {
-        const governor = new ethers.Contract(
-            contracts.GOVERNOR,
-            require('../abi/MoonwellGovernorArtemis.json').abi,
+    // if (contracts.GOVERNOR === Contracts.moonriver.GOVERNOR){
+    //     // Floating quorum, go get the latest
+    //     const governor = new ethers.Contract(
+    //         contracts.GOVERNOR,
+    //         require('../abi/MoonwellGovernorApollo.json'),
+    //         provider
+    //     )
+    //     amountToTransfer = (await governor.getQuorum()).add(EthersBigNumber.from(1).mul(mantissa))
+    // } else {
+        const governor = contracts.GOVERNOR.getContract().connect(
             provider
         )
         amountToTransfer = (await governor.quorumVotes()).add(EthersBigNumber.from(1).mul(mantissa))
-    }
+    // }
 
     const currentBalance = await govToken.balanceOf(await deployer.getAddress())
     if (!currentBalance.isZero()){
-        throw new Error(`Was expecting deployer currentBalance to be 0 ${govTokenTicker(contracts)}. Currently:`, currentBalance.toString())
+        throw new Error(`Was expecting deployer currentBalance to be 0 ${getGovernanceTokenSymbol(contracts.environment)}. Currently:`, currentBalance.toString())
     } else {
-        console.log("    ✅ Deployer currentBalance === 0", govTokenTicker(contracts))
+        console.log("    ✅ Deployer currentBalance === 0", getGovernanceTokenSymbol(contracts.environment))
     }
 
     const govTokenTransferResult = await govToken
@@ -158,16 +148,16 @@ export async function setupDeployerForGovernance(contracts: ContractBundle, prov
 
     const newBalance = await govToken.balanceOf(await deployer.getAddress())
     if (newBalance.isZero()){
-        throw new Error(`Was expecting deployer currentBalance to be ${amountToTransfer} ${govTokenTicker(contracts)}. Currently:`, newBalance.toString())
+        throw new Error(`Was expecting deployer currentBalance to be ${amountToTransfer} ${getGovernanceTokenSymbol(contracts.environment)}. Currently:`, newBalance.toString())
     } else {
-        console.log(`    ✅ Deployer ${govTokenTicker(contracts)} balance ===`, newBalance.div(mantissa).toString(), govTokenTicker(contracts))
+        console.log(`    ✅ Deployer ${getGovernanceTokenSymbol(contracts.environment)} balance ===`, newBalance.div(mantissa).toString(), getGovernanceTokenSymbol(contracts.environment))
     }
 
     const govTokenDelegateResult = await govToken
         .connect(deployer)
         .delegate(await deployer.getAddress())
 
-    console.log(`[+] Delegated ${govTokenTicker(contracts)} to self in call`, govTokenDelegateResult.hash)
+    console.log(`[+] Delegated ${getGovernanceTokenSymbol(contracts.environment)} to self in call`, govTokenDelegateResult.hash)
     await govTokenDelegateResult.wait()
 
     const delegatesResult = await govToken.delegates(await deployer.getAddress())
@@ -184,7 +174,7 @@ export async function setupDeployerForGovernance(contracts: ContractBundle, prov
     if (votingPower.isZero()){
         throw new Error("The deployer has no voting power!")
     } else {
-        console.log("    ✅ Deployer has voting power ===", votingPower.div(mantissa).toString(), govTokenTicker(contracts))
+        console.log("    ✅ Deployer has voting power ===", votingPower.div(mantissa).toString(), getGovernanceTokenSymbol(contracts.environment))
     }
 }
 
@@ -314,27 +304,13 @@ export async function assertMarketRewardState(contracts: ContractBundle, provide
     }
 }
 
-export function govTokenTicker(contracts){
-    if (contracts.COMPTROLLER === Contracts.moonriver.COMPTROLLER){
-        return "MFAM"
-    } else {
-        return "WELL"
-    }
-}
-export function nativeTicker(contracts){
-    if (contracts.COMPTROLLER === Contracts.moonriver.COMPTROLLER){
-        return "MOVR"
-    } else {
-        return "GLMR"
-    }
-}
 
 export async function addMarketAdjustementsToProposal(contracts : ContractBundle, unitroller : Contract, proposalData: any, marketRewardMap: MarketRewardMap){
     // For each market
     for (const [assetTicker, data] of Object.entries(marketRewardMap)){
         // And each reward type
         for (let [assetType, supplyBorrowData] of Object.entries(data)){
-            const ticker = parseInt(assetType) === REWARD_TYPES.GOVTOKEN ? govTokenTicker(contracts) : nativeTicker(contracts)
+            const ticker = parseInt(assetType) === REWARD_TYPES.GOVTOKEN ? getGovernanceTokenSymbol(contracts.environment) : getNativeTokenSymbol(contracts.environment)
             console.log(`    📝 Adding proposal call for \`_setRewardSpeed\` on the ${assetTicker} market with emissions: SUPPLY: ${supplyBorrowData.expectedSupply.div(1e18).toFixed(18)} ${ticker}/sec and BORROW: ${supplyBorrowData.expectedBorrow.div(1e18).toFixed(18)} ${ticker}/sec`)
             // Add the proposed reward speed
             await addProposalToPropData(unitroller, '_setRewardSpeed',

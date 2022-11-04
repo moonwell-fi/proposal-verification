@@ -12,9 +12,7 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
         callDatas: [],
     }
 
-    const unitroller = new ethers.Contract(
-        contracts.COMPTROLLER,
-        require('../../src/abi/Comptroller.json').abi,
+    const unitroller = contracts.COMPTROLLER.getContract().connect(
         provider
     )
 

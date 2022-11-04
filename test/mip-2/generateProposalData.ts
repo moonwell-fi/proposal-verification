@@ -24,9 +24,7 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
         callDatas: [],
     }
 
-    const wellToken = new ethers.Contract(
-        contracts.GOV_TOKEN,
-        require('../../src/abi/Well.json').abi,
+    const wellToken = contracts.GOV_TOKEN.getContract().connect(
         provider
     )
     const dexRewarder = new ethers.Contract(
@@ -39,9 +37,7 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
         require('../../src/abi/StakedWell.json').abi,
         provider
     )
-    const unitroller = new ethers.Contract(
-        contracts.COMPTROLLER,
-        require('../../src/abi/Comptroller.json').abi,
+    const unitroller = contracts.COMPTROLLER.getContract().connect(
         provider
     )
 
