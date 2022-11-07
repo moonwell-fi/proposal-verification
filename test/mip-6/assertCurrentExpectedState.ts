@@ -31,7 +31,7 @@ export async function assertCurrentExpectedState(contracts: ContractBundle, prov
     )
 
     // Assert current WELL emissions
-    await assertSTKWellEmissionsPerSecond(contracts.SAFETY_MODULE, provider,
+    await assertSTKWellEmissionsPerSecond(contracts, provider,
         new BigNumber('1.728956807081810000').times(1e18)
     )
 
