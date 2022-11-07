@@ -25,7 +25,7 @@ export async function assertExpectedEndState(contracts: ContractBundle, provider
         EXPECTED_STARTING_WELL_HOLDINGS["EcosystemReserve"] + SENDAMTS['EcosystemReserve']
     )
     await assertRoundedWellBalance(contracts, provider,
-        contracts.COMPTROLLER,
+        contracts.COMPTROLLER.address,
         'Unitroller',
         EXPECTED_STARTING_WELL_HOLDINGS['Unitroller'] + SENDAMTS['Unitroller']
     )
@@ -47,7 +47,7 @@ export async function assertExpectedEndState(contracts: ContractBundle, provider
         new BigNumber('2.26552960927961').times(1e18)
     )
 
-    await assertSTKWellEmissionsPerSecond(STKWELL, provider,
+    await assertSTKWellEmissionsPerSecond(contracts, provider,
         new BigNumber('1.72895680708181').times(1e18)
     )
 

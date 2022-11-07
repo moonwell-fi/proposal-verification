@@ -34,7 +34,7 @@ export async function assertExpectedEndState(contracts: ContractBundle, provider
 
     // Assert that the COMPTROLLER ends with an expected amt
     await assertRoundedWellBalance(contracts, provider,
-        contracts.COMPTROLLER,
+        contracts.COMPTROLLER.address,
         'Comptroller',
         EXPECTED_STARTING_MFAM_HOLDINGS['COMPTROLLER'] + SENDAMTS['COMPTROLLER']
     )
@@ -60,7 +60,7 @@ export async function assertExpectedEndState(contracts: ContractBundle, provider
         new BigNumber('5.198326554715510000').times(1e18)
     )
 
-    await assertSTKWellEmissionsPerSecond(contracts.SAFETY_MODULE, provider,
+    await assertSTKWellEmissionsPerSecond(contracts, provider,
         new BigNumber('1.559497966414650000').times(1e18)
     )
 

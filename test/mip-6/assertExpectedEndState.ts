@@ -34,7 +34,7 @@ export async function assertExpectedEndState(contracts: ContractBundle, provider
         new BigNumber('2.086672008547010000').times(1e18)
     )
 
-    await assertSTKWellEmissionsPerSecond(contracts.SAFETY_MODULE, provider,
+    await assertSTKWellEmissionsPerSecond(contracts, provider,
         new BigNumber('2.086672008547010000').times(1e18)
     )
 
