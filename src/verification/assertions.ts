@@ -262,11 +262,7 @@ export async function assertMarketIsNotListed(provider: ethers.providers.JsonRpc
   const allMarkets = await unitroller.getAllMarkets()
 
   const marketContracts = allMarkets.map((market: string) => {
-    return new ethers.Contract(
-      market,
-      require('../abi/MErc20Delegator.json').abi,
-      provider
-    )
+    return getContract('MErc20Delegator', market, provider)
   })
 
   for (const marketContract of marketContracts) {
@@ -304,11 +300,7 @@ export async function assertMarketIsNotListed(provider: ethers.providers.JsonRpc
   const allMarkets = await unitroller.getAllMarkets()
 
   const marketContracts = allMarkets.map((market: string) => {
-    return new ethers.Contract(
-      market,
-      require('../abi/MErc20Delegator.json').abi,
-      provider
-    )
+    return getContract('MErc20Delegator', market, provider)
   })
 
   for (const marketContract of marketContracts) {

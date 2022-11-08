@@ -11,7 +11,7 @@ import {
   assertMTokenProxySetCorrectly,
   assertMTokenProxyByteCodeMatches,
 } from "../../src/verification/assertions";
-import {ContractBundle} from "@moonwell-fi/moonwell.js";
+import {ContractBundle, getContract} from "@moonwell-fi/moonwell.js";
 
 export async function assertExpectedEndState(
   provider: ethers.providers.JsonRpcProvider,
@@ -29,11 +29,7 @@ export async function assertExpectedEndState(
     console.log("[+] Asserting protocol is in an expected state AFTER gov proposal passed")
 
     // Market has the expected values in storage.
-    const market = new ethers.Contract(
-      expectedMarketAddress,
-      require('../../src/abi/MErc20Delegator.json').abi,
-      provider
-    )
+    const market = getContract('MErc20Delegator', expectedMarketAddress, provider)
     await assertStorageAddress(market, tokenAddress, 'underlying')
     await assertStorageString(market, mTokenName, 'name')
     await assertStorageString(market, mTokenSymbol, 'symbol')
