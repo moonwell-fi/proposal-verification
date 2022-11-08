@@ -1,5 +1,5 @@
 import {Contracts} from '@moonwell-fi/moonwell.js'
-import {passGovProposal, setupDeployerForGovernance, sleep, startGanache} from "../../src";
+import {passGovProposal, setupDeployerAndEnvForGovernance, sleep, startGanache} from "../../src";
 import {ethers} from "ethers";
 
 import {generateProposalData} from "./generateProposalData";
@@ -40,7 +40,7 @@ test("market-deployer", async () => {
         const provider = new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545')
 
         // Go transfer WELL to the deployer key, delegate those well to itself, and assert it has voting power
-        await setupDeployerForGovernance(contracts, provider, wellTreasuryAddress)
+        await setupDeployerAndEnvForGovernance(contracts, provider, wellTreasuryAddress, FORK_BLOCK)
 
         // Assert that a market is not listed for the token and a chainlink feed is not registered.
         await assertCurrentExpectedState(provider, contracts, tokenToList, chainlinkAddress)

@@ -1,7 +1,7 @@
 import {ethers} from "ethers";
 import BigNumber from "bignumber.js";
-import {ContractBundle, getDeployArtifact, Market} from "@moonwell-fi/moonwell.js";
-import {govTokenTicker, nativeTicker} from "./index";
+import {ContractBundle, getContract, getDeployArtifact, Market} from "@moonwell-fi/moonwell.js";
+import {govTokenTicker, nativeTicker, percentTo18DigitMantissa} from "./index";
 
 export async function assertRoundedWellBalance(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, targetAddress: string, name: string, balance: number){
   const wellToken = contracts.GOV_TOKEN.getContract(provider)
@@ -255,11 +255,7 @@ export async function assertTransferGuardianIsNotPaused(provider: ethers.provide
  * @param targetUnderlyingTokenAddress The address of an ERC-20 token to ensure is not listed. 
  */
 export async function assertMarketIsNotListed(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, targetUnderlyingTokenAddress: string){
-  const unitroller = new ethers.Contract(
-    contracts.COMPTROLLER,
-    require('../abi/Comptroller.json').abi,
-    provider
-  )
+  const unitroller = contracts.COMPTROLLER.getContract(provider)
 
   // Note that we fetch contracts from the unitroller, rather than using the static list in moonwell.js. This avoids the case
   // where a future version of moonwell.js includes a new market which would break this assertion.
@@ -301,11 +297,7 @@ export async function assertMarketIsNotListed(provider: ethers.providers.JsonRpc
  * @param expectedAddress The expected address.
  */
  export async function assertMarketIsListed(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, targetUnderlyingTokenAddress: string, expectedAddress: string){
-  const unitroller = new ethers.Contract(
-    contracts.COMPTROLLER,
-    require('../abi/Comptroller.json').abi,
-    provider
-  )
+  const unitroller = contracts.COMPTROLLER.getContract(provider)
 
   // Note that we fetch contracts from the unitroller, rather than using the static list in moonwell.js. This avoids the case
   // where a future version of moonwell.js includes a new market which would break this assertion.
@@ -350,11 +342,7 @@ export async function assertMarketIsNotListed(provider: ethers.providers.JsonRpc
  * @param targetSymbol The symbol of an asset to query.
  */
 export async function assertChainlinkFeedIsNotRegistered(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, targetSymbol: string) {
-  const oracle = new ethers.Contract(
-    contracts.ORACLE,
-    require('../abi/ChainlinkOracle.json').abi,
-    provider
-  )
+  const oracle = contracts.ORACLE.getContract(provider)
 
   const feed = await oracle.getFeed(targetSymbol)
   if (feed !== ethers.constants.AddressZero) {
@@ -371,11 +359,7 @@ export async function assertChainlinkFeedIsNotRegistered(provider: ethers.provid
  * @param mtokenAddress The market to inspect.
  */
  export async function assertChainlinkPricePresent(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, mtokenAddress: string) {
-  const oracle = new ethers.Contract(
-    contracts.ORACLE,
-    require('../abi/ChainlinkOracle.json').abi,
-    provider
-  )
+  const oracle = contracts.ORACLE.getContract(provider)
 
   const price = await oracle.getUnderlyingPrice(mtokenAddress)
   if (price.eq(0)) {
@@ -397,11 +381,7 @@ export async function assertChainlinkFeedIsNotRegistered(provider: ethers.provid
  * @param expectedAddress The expected feed. 
  */
  export async function assertChainlinkFeedIsRegistered(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, targetSymbol: string, expectedAddress: string) {
-  const oracle = new ethers.Contract(
-    contracts.ORACLE,
-    require('../abi/ChainlinkOracle.json').abi,
-    provider
-  )
+  const oracle = contracts.ORACLE.getContract(provider)
 
   const feed = await oracle.getFeed(targetSymbol)
   if (feed === ethers.constants.AddressZero) {
@@ -419,13 +399,9 @@ export async function assertTimelockIsAdminOfMarket(
   contracts: ContractBundle,
   marketAddress: string
 ) {
-  const market = new ethers.Contract(
-    marketAddress,
-    require('../abi/MToken.json').abi,
-    provider
-  )
+  const market = getContract('MToken', marketAddress, provider)
 
-  await assertStorageAddress(market, contracts.TIMELOCK, 'admin')
+  await assertStorageAddress(market, contracts.TIMELOCK.address, 'admin')
 }
 
 /**
@@ -441,11 +417,7 @@ export async function assertCF(
   marketAddress: string,
   expectedCollateralFactor: number
 ) {
-  const comptroller = new ethers.Contract(
-    contracts.COMPTROLLER,
-    require('../abi/Comptroller.json').abi,
-    provider
-  )
+  const comptroller = contracts.COMPTROLLER.getContract(provider)
 
   const marketData = await comptroller.markets(marketAddress)
   const collateralFactor = marketData.collateralFactorMantissa
@@ -468,11 +440,7 @@ export async function assertMarketRF(
   marketAddress: string,
   expectedRFPercent: number
 ) {
-  const market = new ethers.Contract(
-    marketAddress,
-    require('../abi/MToken.json').abi,
-    provider
-  )
+  const market = getContract('MToken', marketAddress, provider)
 
   const reserveFactor = await market.reserveFactorMantissa()
   const expected = percentTo18DigitMantissa(expectedRFPercent)
@@ -494,18 +462,50 @@ export async function assertMarketSeizeShare(
   marketAddress: string,
   expectedSeizeSharePercent: number
 ) {
-  const market = new ethers.Contract(
-    marketAddress,
-    require('../abi/MToken.json').abi,
-    provider
-  )
-
+  const market = getContract('MToken', marketAddress, provider)
+  
   const seizeShare = await market.protocolSeizeShareMantissa()
   const expected = percentTo18DigitMantissa(expectedSeizeSharePercent)
   if (!seizeShare.eq(expected)) {
     throw new Error(`Unexpected Seize Share value value in market ${marketAddress}. Expected: ${expected}, Actual: ${seizeShare.toString()}`)
   }
   console.log(`    ✅ Protocol Seize share set correctly.`)
+}
+
+/**
+ * Assert an mToken proxy is pointing at the mToken implementation contract.
+ * 
+ * @param provider An ethers provider.
+ * @param contracts A contract bundle.
+ * @param marketProxyAddress The market to inspect.
+ */
+export async function assertMTokenProxySetCorrectly(
+  provider: ethers.providers.JsonRpcProvider, 
+  contracts: ContractBundle, 
+  marketProxyAddress: string
+) {
+  const mTokenProxy = getContract('MErc20Delegator', marketProxyAddress, provider)
+  await assertStorageAddress(mTokenProxy, contracts.MERC_20_IMPL.address, 'implementation')
+}
+
+/**
+ * Assert the given contract has the bytecode of the MErc20Delegator.
+ * 
+ * @param provider An ethers provider.
+ * @param contracts A contract bundle.
+ * @param marketProxyAddress The market to inspect.
+ */
+ export async function assertMTokenProxyByteCodeMatches(
+  provider: ethers.providers.JsonRpcProvider, 
+  marketProxyAddress: string
+) {
+  const byteCode = await provider.getCode(marketProxyAddress)
+  const expectedBytecode = getDeployArtifact('MErc20Delegator').bytecode
+
+  if (byteCode === expectedBytecode) {
+    throw new Error(`Unexpected byte code in contract ${marketProxyAddress}`)
+  }
+  console.log(`    ✅ Contract byte code matches expectations.`)
 }
 
 /**
