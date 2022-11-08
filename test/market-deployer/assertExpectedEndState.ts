@@ -10,8 +10,11 @@ import {
   assertCF,
   assertMTokenProxySetCorrectly,
   assertMTokenProxyByteCodeMatches,
+  assertMarketGovTokenRewardSpeed,
+  assertMarketNativeTokenRewardSpeed
 } from "../../src/verification/assertions";
 import {ContractBundle, getContract} from "@moonwell-fi/moonwell.js";
+import BigNumber from "bignumber.js";
 
 export async function assertExpectedEndState(
   provider: ethers.providers.JsonRpcProvider,
@@ -51,4 +54,10 @@ export async function assertExpectedEndState(
     // Assertions about the contract: we are talking to a contract with known bytecode and it's pointed at a known impl
     await assertMTokenProxySetCorrectly(provider, contracts, expectedMarketAddress)
     await assertMTokenProxyByteCodeMatches(provider, expectedMarketAddress)
+
+    // Assert no supply speeds, and a very slow borrow speed.
+    const expectedBorrowSpeed = new BigNumber(1)
+    const expectedSupplySpeed = new BigNumber(0)
+    await assertMarketGovTokenRewardSpeed(contracts, provider, tokenSymbol, expectedSupplySpeed, expectedBorrowSpeed)
+    await assertMarketNativeTokenRewardSpeed(contracts, provider, tokenSymbol, expectedSupplySpeed, expectedBorrowSpeed)
 }
