@@ -195,7 +195,6 @@ export async function startGanache(contracts: ContractBundle, forkBlock: number,
     const command = `
     ganache-cli
       ${unlockAddresses && unlockAddresses.map(i => '--wallet.unlockedAccounts ' + i).join(' ')} 
-      -b 1
       --fork.url "${rpcURL}"
       --fork.blockNumber ${forkBlock}
       --wallet.defaultBalance ${ ethers.utils.parseEther("2.0") }
