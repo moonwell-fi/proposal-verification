@@ -1,7 +1,5 @@
 import { deployAndWireMarket } from '@moonwell-fi/market-deployer'
 import { Environment } from '@moonwell-fi/moonwell.js';
-import {ethers} from "ethers";
-
 
 export const generateProposalData = async (
   deployer: any,
@@ -21,6 +19,7 @@ export const generateProposalData = async (
     networkName: 'moonbeam',
     environment: Environment.MOONBEAM,
     deployer,
+    requiredConfirmations: 1
   }
   const marketConfiguration = {
     tokenAddress,
