@@ -1,6 +1,6 @@
 import {ethers} from "ethers";
 import {BigNumber as EthersBigNumber} from "@ethersproject/bignumber/lib/bignumber";
-import {ContractBundle} from "@moonwell-fi/moonwell.js";
+import {ContractBundle, getDeployArtifact} from "@moonwell-fi/moonwell.js";
 import {addProposalToPropData} from "../../src";
 import BigNumber from "bignumber.js";
 import {DEX_REWARDER, ECOSYSTEM_RESERVE, fMOVRGrant, SENDAMTS, SUBMITTER_WALLET} from "./vars";
@@ -22,7 +22,7 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
     const comptroller = contracts.COMPTROLLER.getContract(provider)
     const dexRewarder = new ethers.Contract(
         DEX_REWARDER,
-        require('../../src/abi/dexRewarder.json').abi,
+        getDeployArtifact('dexRewarder').abi,
         provider
     )
 

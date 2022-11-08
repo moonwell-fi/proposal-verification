@@ -1,7 +1,7 @@
 import {ethers} from "ethers";
 import {ProposalData} from "../../src";
 import {BigNumber as EthersBigNumber} from "@ethersproject/bignumber/lib/bignumber";
-import {ContractBundle} from "@moonwell-fi/moonwell.js";
+import {ContractBundle, getDeployArtifact} from "@moonwell-fi/moonwell.js";
 
 export async function generateProposalData(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider){
     const comptroller = contracts.COMPTROLLER.getContract(provider)
@@ -37,7 +37,7 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
     for (const market of nomadMarkets){
         const mToken = new ethers.Contract(
             market.mTokenAddress,
-            require('../../src/abi/MToken.json').abi,
+            getDeployArtifact('MToken').abi,
             provider
         )
 
