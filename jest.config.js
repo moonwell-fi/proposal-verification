@@ -4,6 +4,5 @@ module.exports = {
   testEnvironment: 'node',
   testMatch: [ "**/*-verification.ts" ],
   testTimeout: 600 * 1000,
-  maxConcurrency: 1,
   setupFilesAfterEnv: ['./test/config.js'],
 };
