@@ -6,7 +6,6 @@ import {
 import BigNumber from "bignumber.js";
 import {ContractBundle} from "@moonwell-fi/moonwell.js";
 import {
-    DEX_REWARDER,
     ECOSYSTEM_RESERVE, ENDING_MARKET_REWARDS_STATE,
     EXPECTED_STARTING_WELL_HOLDINGS, F_GLMR_LM,
     SENDAMTS,
@@ -25,16 +24,16 @@ export async function assertExpectedEndState(contracts: ContractBundle, provider
         provider,
         EXPECTED_STARTING_WELL_HOLDINGS,
         SENDAMTS,
-        {ECOSYSTEM_RESERVE, DEX_REWARDER, F_GLMR_LM, SUBMITTER_WALLET}
+        {ECOSYSTEM_RESERVE, F_GLMR_LM, SUBMITTER_WALLET}
     )
 
-    await assertDexRewarderRewardsPerSec(DEX_REWARDER, provider,
+    await assertDexRewarderRewardsPerSec(contracts, provider,
         15,
         7,
         new BigNumber('2.086672008547010000').times(1e18)
     )
 
-    await assertSTKWellEmissionsPerSecond(contracts.SAFETY_MODULE, provider,
+    await assertSTKWellEmissionsPerSecond(contracts, provider,
         new BigNumber('2.086672008547010000').times(1e18)
     )
 

@@ -2,7 +2,6 @@ import {MarketRewardMap, REWARD_TYPES, TokenHoldingsMap} from "../../src";
 import BigNumber from "bignumber.js";
 
 export const ECOSYSTEM_RESERVE = '0x7793E08Eb4525309C46C9BA394cE33361A167ba4'
-export const DEX_REWARDER = '0xcD04D2340c1dD9B3dB2C5c53c8B8bAa57b2654Be'
 export const F_GLMR_LM = '0x6972f25AB3FC425EaF719721f0EBD1Cdb58eE451'
 export const C_GLMR_APPDEV = '0x519ee031E182D3E941549E7909C9319cFf4be69a'
 

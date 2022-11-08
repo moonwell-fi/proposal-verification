@@ -1,14 +1,10 @@
 import {ethers} from "ethers";
 import {ProposalData} from "../../src";
 import {BigNumber as EthersBigNumber} from "@ethersproject/bignumber/lib/bignumber";
-import {ContractBundle} from "@moonwell-fi/moonwell.js";
+import {ContractBundle, getDeployArtifact} from "@moonwell-fi/moonwell.js";
 
 export async function generateProposalData(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider){
-    const unitroller = new ethers.Contract(
-        contracts.COMPTROLLER,
-        require('../../src/abi/Comptroller.json').abi,
-        provider
-    )
+    const comptroller = contracts.COMPTROLLER.getContract(provider)
 
     const proposalData: ProposalData = {
         targets: [],
@@ -27,13 +23,13 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
 
     // Set collateral factors to 0 for the nomad markets
     for (const market of nomadMarkets){
-        const tx = await unitroller.populateTransaction._setCollateralFactor(
+        const tx = await comptroller.populateTransaction._setCollateralFactor(
             market.mTokenAddress,
             EthersBigNumber.from(0)
         )
-        proposalData.targets.push(unitroller.address)
+        proposalData.targets.push(comptroller.address)
         proposalData.values.push(0)
-        proposalData.signatures.push(unitroller.interface.getFunction('_setCollateralFactor').format())
+        proposalData.signatures.push(comptroller.interface.getFunction('_setCollateralFactor').format())
         proposalData.callDatas.push('0x' + tx.data!.slice(10)) // chop off the method selector from the args
     }
 
@@ -41,7 +37,7 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
     for (const market of nomadMarkets){
         const mToken = new ethers.Contract(
             market.mTokenAddress,
-            require('../../src/abi/MToken.json').abi,
+            getDeployArtifact('MToken').abi,
             provider
         )
 
@@ -57,21 +53,21 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
 
     // Set Borrow paused = false for functional markets
     for (const market of functionalMarkets){
-        const tx = await unitroller.populateTransaction._setBorrowPaused(
+        const tx = await comptroller.populateTransaction._setBorrowPaused(
             market.mTokenAddress,
             false
         )
-        proposalData.targets.push(unitroller.address)
+        proposalData.targets.push(comptroller.address)
         proposalData.values.push(0)
-        proposalData.signatures.push(unitroller.interface.getFunction('_setBorrowPaused').format())
+        proposalData.signatures.push(comptroller.interface.getFunction('_setBorrowPaused').format())
         proposalData.callDatas.push('0x' + tx.data!.slice(10)) // chop off the method selector from the args
     }
 
     // Set mToken transfers re-enabled
-    const tx = await unitroller.populateTransaction._setTransferPaused(false)
-    proposalData.targets.push(unitroller.address)
+    const tx = await comptroller.populateTransaction._setTransferPaused(false)
+    proposalData.targets.push(comptroller.address)
     proposalData.values.push(0)
-    proposalData.signatures.push(unitroller.interface.getFunction('_setTransferPaused').format())
+    proposalData.signatures.push(comptroller.interface.getFunction('_setTransferPaused').format())
     proposalData.callDatas.push('0x' + tx.data!.slice(10)) // chop off the method selector from the args
 
     return proposalData

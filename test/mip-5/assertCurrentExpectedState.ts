@@ -5,8 +5,7 @@ import {
     assertRoundedWellBalance,
     assertSTKWellEmissionsPerSecond
 } from "../../src/verification/assertions";
-import {DEX_REWARDER, ECOSYSTEM_RESERVE, EXPECTED_STARTING_MFAM_HOLDINGS, fMOVRGrant, SUBMITTER_WALLET} from "./vars";
-import {STKWELL} from "../mip-2/vars";
+import {ECOSYSTEM_RESERVE, EXPECTED_STARTING_MFAM_HOLDINGS, fMOVRGrant, SUBMITTER_WALLET} from "./vars";
 import BigNumber from "bignumber.js";
 import {govTokenTicker} from "../../src";
 
@@ -36,20 +35,20 @@ export async function assertCurrentExpectedState(contracts: ContractBundle, prov
 
     // Assert that the COMPTROLLER starts with an expected amt
     await assertRoundedWellBalance(contracts, provider,
-        contracts.COMPTROLLER,
+        contracts.COMPTROLLER.address,
         'Comptroller',
         EXPECTED_STARTING_MFAM_HOLDINGS['COMPTROLLER']
     )
 
     // Assert that the DEX_REWARDER starts with an expected amt
     await assertRoundedWellBalance(contracts, provider,
-        DEX_REWARDER,
+        contracts.DEX_REWARDER.address,
         'DEX_REWARDER',
         EXPECTED_STARTING_MFAM_HOLDINGS['DEX_REWARDER']
     )
 
     // Assert current reward speeds for DEX_REWARDER
-    await assertDexRewarderRewardsPerSec(DEX_REWARDER, provider,
+    await assertDexRewarderRewardsPerSec(contracts, provider,
         11,
         21,
         new BigNumber('5.315678137644940000').times(1e18),
@@ -57,7 +56,7 @@ export async function assertCurrentExpectedState(contracts: ContractBundle, prov
     )
 
     // Assert current WELL emissions
-    await assertSTKWellEmissionsPerSecond(contracts.SAFETY_MODULE, provider,
+    await assertSTKWellEmissionsPerSecond(contracts, provider,
         new BigNumber('1.3608136032371').times(1e18),
         govTokenTicker(contracts)
     )
