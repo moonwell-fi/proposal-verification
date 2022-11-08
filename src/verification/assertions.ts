@@ -1,6 +1,6 @@
 import {ethers} from "ethers";
 import BigNumber from "bignumber.js";
-import {ContractBundle, Market} from "@moonwell-fi/moonwell.js";
+import {ContractBundle, getDeployArtifact, Market} from "@moonwell-fi/moonwell.js";
 import {govTokenTicker, nativeTicker} from "./index";
 
 export async function assertRoundedWellBalance(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, targetAddress: string, name: string, balance: number){
@@ -24,7 +24,7 @@ export async function assertDexRewarderRewardsPerSec(DEX_REWARDER: string, provi
   console.log("    [-] Checking dex rewarder...")
   const dexRewarder = new ethers.Contract(
     DEX_REWARDER,
-    require('../abi/dexRewarder.json').abi,
+    getDeployArtifact('dexRewarder').abi,
     provider
   )
 
@@ -191,7 +191,7 @@ export async function assertMarketCFEqualsPercent(provider: ethers.providers.Jso
 export async function assertMarketRFIsNOTOneHundred(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market){
   const mToken = new ethers.Contract(
       market.mTokenAddress,
-      require('../abi/MToken.json').abi,
+      getDeployArtifact('MToken').abi,
       provider
   )
 
@@ -208,7 +208,7 @@ export async function assertMarketRFIsNOTOneHundred(provider: ethers.providers.J
 export async function assertMarketRFIsOneHundred(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market){
   const mToken = new ethers.Contract(
       market.mTokenAddress,
-      require('../abi/MToken.json').abi,
+      getDeployArtifact('MToken').abi,
       provider
   )
 
