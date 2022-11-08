@@ -2,14 +2,12 @@ import {ethers} from "ethers";
 import {BigNumber as EthersBigNumber} from "@ethersproject/bignumber/lib/bignumber";
 import {addProposalToPropData} from "../../src";
 import BigNumber from "bignumber.js";
-import {ContractBundle, getDeployArtifact} from "@moonwell-fi/moonwell.js";
+import {ContractBundle} from "@moonwell-fi/moonwell.js";
 import {
-    DEX_REWARDER,
     ECOSYSTEM_RESERVE,
     fGLMRDEVGRANT,
     fGLMRLM,
     SENDAMTS,
-    STKWELL,
     WALLET_PAYMENT_AMOUNT,
     WALLET_TO_PAY
 } from "./vars";
@@ -27,11 +25,7 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
     const wellToken = contracts.GOV_TOKEN.getContract(provider)
     const stkWELL = contracts.SAFETY_MODULE.getContract(provider)
     const comptroller = contracts.COMPTROLLER.getContract(provider)
-    const dexRewarder = new ethers.Contract(
-        DEX_REWARDER,
-        getDeployArtifact('dexRewarder').abi,
-        provider
-    )
+    const dexRewarder = contracts.DEX_REWARDER.getContract(provider)
 
     // Send 4_182_693 WELL from F-GLMR-LM to ecosystemReserve
     await addProposalToPropData(wellToken, 'transferFrom',
@@ -66,7 +60,7 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
     // Approve dexRewarder to pull 5,480,770 WELL from the timelock
     await addProposalToPropData(wellToken, 'approve',
         [
-            DEX_REWARDER,
+            contracts.DEX_REWARDER.address,
             EthersBigNumber.from(SENDAMTS['Dex Rewarder']).mul(mantissa)
         ],
         proposalData

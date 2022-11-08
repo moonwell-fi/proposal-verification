@@ -1,9 +1,9 @@
 import {ethers} from "ethers";
 import {BigNumber as EthersBigNumber} from "@ethersproject/bignumber/lib/bignumber";
-import {ContractBundle, getDeployArtifact} from "@moonwell-fi/moonwell.js";
+import {ContractBundle} from "@moonwell-fi/moonwell.js";
 import {addProposalToPropData} from "../../src";
 import BigNumber from "bignumber.js";
-import {DEX_REWARDER, ECOSYSTEM_RESERVE, fMOVRGrant, SENDAMTS, SUBMITTER_WALLET} from "./vars";
+import {ECOSYSTEM_RESERVE, fMOVRGrant, SENDAMTS, SUBMITTER_WALLET} from "./vars";
 
 export async function generateProposalData(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider){
     const mantissa = EthersBigNumber.from(10).pow(18)
@@ -20,11 +20,7 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
     const mfamToken = contracts.GOV_TOKEN.getContract(provider)
     const stkWELL = contracts.SAFETY_MODULE.getContract(provider)
     const comptroller = contracts.COMPTROLLER.getContract(provider)
-    const dexRewarder = new ethers.Contract(
-        DEX_REWARDER,
-        getDeployArtifact('dexRewarder').abi,
-        provider
-    )
+    const dexRewarder = contracts.DEX_REWARDER.getContract(provider)
 
     // Send MFAM from F-MOVR-GRANT to ECOSYSTEM_RESERVE
     console.log(`    ✅ Sending ${SENDAMTS['ECOSYSTEM_RESERVE']} MFAM to the ECOSYSTEM_RESERVE`)
@@ -63,7 +59,7 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
     console.log(`    ✅ Approving ${SENDAMTS['DEX_REWARDER']} for the DEX REWARDER from the TIMELOCK`)
     await addProposalToPropData(mfamToken, 'approve',
         [
-            DEX_REWARDER,
+            contracts.DEX_REWARDER.address,
             EthersBigNumber.from(SENDAMTS['DEX_REWARDER']).mul(mantissa)
         ],
         proposalData
