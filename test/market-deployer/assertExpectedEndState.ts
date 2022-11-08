@@ -8,7 +8,8 @@ import {
   assertMarketSeizeShare,
   assertMarketRF,
   assertCF,
-  assertChainlinkPricePresent, 
+  assertMTokenProxySetCorrectly,
+  assertMTokenProxyByteCodeMatches,
 } from "../../src/verification/assertions";
 import {ContractBundle} from "@moonwell-fi/moonwell.js";
 
@@ -50,4 +51,8 @@ export async function assertExpectedEndState(
     
     // Assert a chain link feed is registered
     await assertChainlinkFeedIsRegistered(provider, contracts, tokenSymbol, chainlinkFeedAddress)
+
+    // Assertions about the contract: we are talking to a contract with known bytecode and it's pointed at a known impl
+    await assertMTokenProxySetCorrectly(provider, contracts, expectedMarketAddress)
+    await assertMTokenProxyByteCodeMatches(provider, expectedMarketAddress)
 }

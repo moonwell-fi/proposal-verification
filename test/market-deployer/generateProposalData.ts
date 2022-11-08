@@ -1,4 +1,5 @@
 import { deployAndWireMarket } from '@moonwell-fi/market-deployer'
+import { Environment } from '@moonwell-fi/moonwell.js';
 import {ethers} from "ethers";
 
 
@@ -16,14 +17,9 @@ export const generateProposalData = async (
 ) => {
   console.log("[+] Deploying Market ")
 
-  const contractFactory = new ethers.ContractFactory(
-    require('../../src/abi/MErc20Delegator.json').abi,
-    require('../../src/abi/MErc20Delegator.json').bytecode,
-    deployer
-  )
-
   const deploymentConfiguration = {
     networkName: 'moonbeam',
+    environment: Environment.MOONBEAM,
     deployer,
   }
   const marketConfiguration = {
