@@ -12,11 +12,7 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
         callDatas: [],
     }
 
-    const unitroller = new ethers.Contract(
-        contracts.COMPTROLLER,
-        require('../../src/abi/Comptroller.json').abi,
-        provider
-    )
+    const comptroller = contracts.COMPTROLLER.getContract(provider)
 
     // Configure WELL reward speed for GLMR
     const newCFPercent = 62
@@ -27,7 +23,7 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
             .toFixed(0)
     )
 
-    await addProposalToPropData(unitroller, '_setCollateralFactor',
+    await addProposalToPropData(comptroller, '_setCollateralFactor',
         [
             contracts.MARKETS['xcDOT'].mTokenAddress,
             newCFBigNumber

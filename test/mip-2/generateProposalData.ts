@@ -2,7 +2,7 @@ import {ethers} from "ethers";
 import {BigNumber as EthersBigNumber} from "@ethersproject/bignumber/lib/bignumber";
 import {addProposalToPropData} from "../../src";
 import BigNumber from "bignumber.js";
-import {ContractBundle} from "@moonwell-fi/moonwell.js";
+import {ContractBundle, getDeployArtifact} from "@moonwell-fi/moonwell.js";
 import {
     DEX_REWARDER,
     ECOSYSTEM_RESERVE,
@@ -24,24 +24,12 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
         callDatas: [],
     }
 
-    const wellToken = new ethers.Contract(
-        contracts.GOV_TOKEN,
-        require('../../src/abi/Well.json').abi,
-        provider
-    )
+    const wellToken = contracts.GOV_TOKEN.getContract(provider)
+    const stkWELL = contracts.SAFETY_MODULE.getContract(provider)
+    const comptroller = contracts.COMPTROLLER.getContract(provider)
     const dexRewarder = new ethers.Contract(
         DEX_REWARDER,
-        require('../../src/abi/dexRewarder.json').abi,
-        provider
-    )
-    const stkWELL = new ethers.Contract(
-        STKWELL,
-        require('../../src/abi/StakedWell.json').abi,
-        provider
-    )
-    const unitroller = new ethers.Contract(
-        contracts.COMPTROLLER,
-        require('../../src/abi/Comptroller.json').abi,
+        getDeployArtifact('dexRewarder').abi,
         provider
     )
 
@@ -59,7 +47,7 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
     await addProposalToPropData(wellToken, 'transferFrom',
         [
             fGLMRLM,
-            contracts.COMPTROLLER,
+            contracts.COMPTROLLER.address,
             EthersBigNumber.from(SENDAMTS["Unitroller"]).mul(mantissa)
         ],
         proposalData
@@ -69,7 +57,7 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
     await addProposalToPropData(wellToken, 'transferFrom',
         [
             fGLMRLM,
-            contracts.TIMELOCK,
+            contracts.TIMELOCK.address,
             EthersBigNumber.from(SENDAMTS['Dex Rewarder']).mul(mantissa)
         ],
         proposalData
@@ -106,7 +94,7 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
     )
 
     // Configure WELL reward speed for GLMR
-    await addProposalToPropData(unitroller, '_setRewardSpeed',
+    await addProposalToPropData(comptroller, '_setRewardSpeed',
         [
             EthersBigNumber.from(0), // 0 = WELL, 1 = GLMR
             contracts.MARKETS['GLMR'].mTokenAddress,
@@ -116,7 +104,7 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
         proposalData
     )
     // Configure WELL reward speed for xcDOT
-    await addProposalToPropData(unitroller, '_setRewardSpeed',
+    await addProposalToPropData(comptroller, '_setRewardSpeed',
         [
             EthersBigNumber.from(0), // 0 = WELL, 1 = GLMR
             contracts.MARKETS['xcDOT'].mTokenAddress,
@@ -126,7 +114,7 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
         proposalData
     )
     // Configure WELL reward speed for FRAX
-    await addProposalToPropData(unitroller, '_setRewardSpeed',
+    await addProposalToPropData(comptroller, '_setRewardSpeed',
         [
             EthersBigNumber.from(0), // 0 = WELL, 1 = GLMR
             contracts.MARKETS['FRAX'].mTokenAddress,
