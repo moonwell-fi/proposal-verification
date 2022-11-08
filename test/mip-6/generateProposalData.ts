@@ -2,7 +2,7 @@ import {ethers} from "ethers";
 import {BigNumber as EthersBigNumber} from "@ethersproject/bignumber/lib/bignumber";
 import {addMarketAdjustementsToProposal, addProposalToPropData} from "../../src";
 import BigNumber from "bignumber.js";
-import {ContractBundle} from "@moonwell-fi/moonwell.js";
+import {ContractBundle, getDeployArtifact} from "@moonwell-fi/moonwell.js";
 import {
     DEX_REWARDER,
     ECOSYSTEM_RESERVE, ENDING_MARKET_REWARDS_STATE, F_GLMR_LM,
@@ -21,24 +21,12 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
         callDatas: [],
     }
 
-    const wellToken = new ethers.Contract(
-        contracts.GOV_TOKEN,
-        require('../../src/abi/Well.json').abi,
-        provider
-    )
+    const wellToken = contracts.GOV_TOKEN.getContract(provider)
+    const stkWELL = contracts.SAFETY_MODULE.getContract(provider)
+    const unitroller = contracts.COMPTROLLER.getContract(provider)
     const dexRewarder = new ethers.Contract(
         DEX_REWARDER,
-        require('../../src/abi/dexRewarder.json').abi,
-        provider
-    )
-    const stkWELL = new ethers.Contract(
-        contracts.SAFETY_MODULE,
-        require('../../src/abi/StakedWell.json').abi,
-        provider
-    )
-    const unitroller = new ethers.Contract(
-        contracts.COMPTROLLER,
-        require('../../src/abi/Comptroller.json').abi,
+        getDeployArtifact('dexRewarder').abi,
         provider
     )
 
@@ -54,11 +42,11 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
     )
 
     // Send WELL from F-GLMR-LM to unitroller
-    console.log(`    📝 Adding transferFrom call from ${F_GLMR_LM} (F_GLMR_LM) to ${contracts.COMPTROLLER} (COMPTROLLER) for ${EthersBigNumber.from(SENDAMTS["COMPTROLLER"]).mul(mantissa)} WELL`)
+    console.log(`    📝 Adding transferFrom call from ${F_GLMR_LM} (F_GLMR_LM) to ${contracts.COMPTROLLER.address} (COMPTROLLER) for ${EthersBigNumber.from(SENDAMTS["COMPTROLLER"]).mul(mantissa)} WELL`)
     await addProposalToPropData(wellToken, 'transferFrom',
         [
             F_GLMR_LM,
-            contracts.COMPTROLLER,
+            contracts.COMPTROLLER.address,
             EthersBigNumber.from(SENDAMTS["COMPTROLLER"]).mul(mantissa)
         ],
         proposalData
@@ -69,7 +57,7 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
     await addProposalToPropData(wellToken, 'transferFrom',
         [
             F_GLMR_LM,
-            contracts.TIMELOCK,
+            contracts.TIMELOCK.address,
             EthersBigNumber.from(SENDAMTS['DEX_REWARDER']).mul(mantissa)
         ],
         proposalData
