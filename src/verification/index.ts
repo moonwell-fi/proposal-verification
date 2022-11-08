@@ -103,8 +103,12 @@ export async function addProposalToPropData(contract: Contract, fn: string, args
     proposalData.callDatas.push('0x' + tx.data!.slice(10)) // chop off the method selector from the args
 }
 
-export async function setupDeployerForGovernance(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, wellTreasuryAddress: string){
+export async function setupDeployerAndEnvForGovernance(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, wellTreasuryAddress: string, forkBlock: number){
     const mantissa = EthersBigNumber.from(10).pow(18)
+
+    // Mine a block to set the initial block timestamp
+    const forkedBlock = await provider.getBlock(forkBlock)
+    await provider.send("evm_mine", [forkedBlock.timestamp + 1])
 
     const wellTreasury = provider.getSigner(wellTreasuryAddress)
 

@@ -2,7 +2,7 @@ import {ethers} from 'ethers'
 import {
     passGovProposal,
     replaceXCAssetWithDummyERC20,
-    setupDeployerForGovernance,
+    setupDeployerAndEnvForGovernance,
     sleep,
     startGanache
 } from "../../src";
@@ -34,7 +34,7 @@ test("mip-4-verifications", async () => {
 
         // Go transfer WELL to the deployer key from the cGLMRAPPDEV treasury, delegate those well to the deployer,
         // and assert the deployer has enough voting power to pass a proposal
-        await setupDeployerForGovernance(contracts, provider, fMOVRGrant)
+        await setupDeployerAndEnvForGovernance(contracts, provider, fMOVRGrant, FORK_BLOCK)
 
         await assertMarketCFEqualsPercent(
             provider, contracts, contracts.MARKETS['ETH.multi'],

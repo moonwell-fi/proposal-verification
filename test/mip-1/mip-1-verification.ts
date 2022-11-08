@@ -1,5 +1,5 @@
 import {Contracts} from '@moonwell-fi/moonwell.js'
-import {passGovProposal, setupDeployerForGovernance, sleep, startGanache} from "../../src";
+import {passGovProposal, setupDeployerAndEnvForGovernance, sleep, startGanache} from "../../src";
 import {ethers} from "ethers";
 
 import {generateProposalData} from "./generateProposalData";
@@ -26,7 +26,7 @@ test("mip-1-verifications", async () => {
         const provider = new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545')
 
         // Go transfer WELL to the deployer key, delegate those well to itself, and assert it has voting power
-        await setupDeployerForGovernance(contracts, provider, wellTreasuryAddress)
+        await setupDeployerAndEnvForGovernance(contracts, provider, wellTreasuryAddress, FORK_BLOCK)
 
         // Assert the current state is as we think it is (CF set for nomad assets, borrowing and supplying disabled globally, etc)
         await assertCurrentExpectedState(contracts, provider)
