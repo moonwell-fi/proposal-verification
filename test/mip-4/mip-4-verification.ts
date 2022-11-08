@@ -1,7 +1,6 @@
 import {ethers} from 'ethers'
 import {
     passGovProposal,
-    replaceXCAssetWithDummyERC20,
     setupDeployerAndEnvForGovernance,
     sleep,
     startGanache

@@ -7,12 +7,11 @@ import {
 import BigNumber from "bignumber.js";
 import {ContractBundle} from "@moonwell-fi/moonwell.js";
 import {
-    DEX_REWARDER,
     ECOSYSTEM_RESERVE,
     EXPECTED_STARTING_WELL_HOLDINGS,
     fGLMRLM,
     SENDAMTS,
-    STKWELL, WALLET_PAYMENT_AMOUNT,
+    WALLET_PAYMENT_AMOUNT,
     WALLET_TO_PAY
 } from "./vars";
 
@@ -30,7 +29,7 @@ export async function assertExpectedEndState(contracts: ContractBundle, provider
         EXPECTED_STARTING_WELL_HOLDINGS['Unitroller'] + SENDAMTS['Unitroller']
     )
     await assertRoundedWellBalance(contracts, provider,
-        DEX_REWARDER,
+        contracts.DEX_REWARDER.address,
         'Dex Rewarder',
         EXPECTED_STARTING_WELL_HOLDINGS['Dex Rewarder'] + SENDAMTS['Dex Rewarder'] - 1 // - 1 because of rounding with the dex rewarder
     )
@@ -41,7 +40,7 @@ export async function assertExpectedEndState(contracts: ContractBundle, provider
         EXPECTED_STARTING_WELL_HOLDINGS['F-GLMR-LM'] - SENDAMTS['EcosystemReserve'] - SENDAMTS['Unitroller'] - SENDAMTS['Dex Rewarder']
     )
 
-    await assertDexRewarderRewardsPerSec(DEX_REWARDER, provider,
+    await assertDexRewarderRewardsPerSec(contracts, provider,
         15,
         6,
         new BigNumber('2.26552960927961').times(1e18)

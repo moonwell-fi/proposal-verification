@@ -20,13 +20,9 @@ export async function assertRoundedWellBalance(contracts: ContractBundle, provid
 
 }
 
-export async function assertDexRewarderRewardsPerSec(DEX_REWARDER: string, provider: ethers.providers.JsonRpcProvider, poolID: number, rewardSlot: number, expectedRewardsPerSec: BigNumber, ticker = "(WELL OR MFAM)"){
+export async function assertDexRewarderRewardsPerSec(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, poolID: number, rewardSlot: number, expectedRewardsPerSec: BigNumber, ticker = "(WELL OR MFAM)"){
   console.log("    [-] Checking dex rewarder...")
-  const dexRewarder = new ethers.Contract(
-    DEX_REWARDER,
-    getDeployArtifact('dexRewarder').abi,
-    provider
-  )
+  const dexRewarder = contracts.DEX_REWARDER.getContract(provider)
 
   const currentRewardInfo = await dexRewarder.poolRewardInfo(poolID, rewardSlot - 1)
   console.log(`        ✅  Current rewards expire ${new Date(currentRewardInfo.endTimestamp * 1000)}`)

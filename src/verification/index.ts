@@ -7,7 +7,6 @@ import {
     assertRoundedWellBalance
 } from "./assertions";
 import BigNumber from "bignumber.js";
-import {ECOSYSTEM_RESERVE, EXPECTED_STARTING_WELL_HOLDINGS} from "../../test/mip-6/vars";
 
 export enum REWARD_TYPES {
     GOVTOKEN,
