@@ -7,7 +7,6 @@ import {
     assertRoundedWellBalance
 } from "./assertions";
 import BigNumber from "bignumber.js";
-import {ECOSYSTEM_RESERVE, EXPECTED_STARTING_WELL_HOLDINGS} from "../../test/mip-6/vars";
 
 export enum REWARD_TYPES {
     GOVTOKEN,
@@ -40,11 +39,7 @@ export type TokenHoldingsMap = {
 export async function passGovProposal(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, proposalData: ProposalData, signerAddressOrIndex: number | string = 0){
     console.log("[+] Submitting the following proposal to governance\n", JSON.stringify(proposalData, null ,2), '\n======')
 
-    const governor = new ethers.Contract(
-        contracts.GOVERNOR,
-        require("../abi/MoonwellGovernorArtemis.json").abi,
-        provider.getSigner(signerAddressOrIndex) // Deployer
-    )
+    const governor = contracts.GOVERNOR.getContract(provider.getSigner(signerAddressOrIndex))
 
     const proposalResult = await governor.propose(
         proposalData.targets,
@@ -85,11 +80,7 @@ export async function passGovProposal(contracts: ContractBundle, provider: ether
     await queueResult.wait()
     console.log(`[+] Queued for Execution in Hash: ${queueResult.hash}`)
 
-    const timelock = new ethers.Contract(
-        contracts.TIMELOCK,
-        require("../abi/Timelock.json").abi,
-        provider
-    )
+    const timelock = contracts.TIMELOCK.getContract(provider)
 
     // Delay for the timelock to complete by waiting for the timelock's delay, and then waiting one more block
     const delay = await timelock.delay()
@@ -112,8 +103,12 @@ export async function addProposalToPropData(contract: Contract, fn: string, args
     proposalData.callDatas.push('0x' + tx.data!.slice(10)) // chop off the method selector from the args
 }
 
-export async function setupDeployerForGovernance(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, wellTreasuryAddress: string){
+export async function setupDeployerAndEnvForGovernance(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, wellTreasuryAddress: string, forkBlock: number){
     const mantissa = EthersBigNumber.from(10).pow(18)
+
+    // Mine a block to set the initial block timestamp
+    const forkedBlock = await provider.getBlock(forkBlock)
+    await provider.send("evm_mine", [forkedBlock.timestamp + 1])
 
     const wellTreasury = provider.getSigner(wellTreasuryAddress)
 
@@ -125,27 +120,14 @@ export async function setupDeployerForGovernance(contracts: ContractBundle, prov
     )
     console.log(`[+] Funded wellTreasury (${await wellTreasury.getAddress()}) with 1 token`)
 
-    const govToken = new ethers.Contract(
-        contracts.GOV_TOKEN,
-        require('../abi/Well.json').abi,
-        provider
-    )
+    const govToken = contracts.GOV_TOKEN.getContract(provider)
+    const governor = contracts.GOVERNOR.getContract(provider)
 
     let amountToTransfer
     if (contracts.GOVERNOR === Contracts.moonriver.GOVERNOR){
         // Floating quorum, go get the latest
-        const governor = new ethers.Contract(
-            contracts.GOVERNOR,
-            require('../abi/MoonwellGovernorApollo.json'),
-            provider
-        )
         amountToTransfer = (await governor.getQuorum()).add(EthersBigNumber.from(1).mul(mantissa))
     } else {
-        const governor = new ethers.Contract(
-            contracts.GOVERNOR,
-            require('../abi/MoonwellGovernorArtemis.json').abi,
-            provider
-        )
         amountToTransfer = (await governor.quorumVotes()).add(EthersBigNumber.from(1).mul(mantissa))
     }
 
@@ -373,7 +355,7 @@ export async function assertCurrentExpectedGovTokenHoldings(contracts : Contract
     for (const [holderName, amount] of Object.entries(tokenHoldingsMap)) {
         if (contracts[holderName]){
             await assertRoundedWellBalance(contracts, provider,
-                contracts[holderName],
+                contracts[holderName].address,
                 holderName,
                 amount
             )
@@ -391,7 +373,7 @@ export async function assertEndingExpectedGovTokenHoldings(contracts : ContractB
     for (const [holderName, amount] of Object.entries(tokenHoldingsMap)) {
         if (contracts[holderName]){
             await assertRoundedWellBalance(contracts, provider,
-                contracts[holderName],
+                contracts[holderName].address,
                 holderName,
                 amount + sendMap[holderName]
             )

@@ -4,9 +4,11 @@ import {addMarketAdjustementsToProposal, addProposalToPropData} from "../../src"
 import BigNumber from "bignumber.js";
 import {ContractBundle} from "@moonwell-fi/moonwell.js";
 import {
-    DEX_REWARDER,
-    ECOSYSTEM_RESERVE, ENDING_MARKET_REWARDS_STATE, F_GLMR_LM,
-    SENDAMTS, SUBMITTER_WALLET,
+    ECOSYSTEM_RESERVE,
+    ENDING_MARKET_REWARDS_STATE,
+    F_GLMR_LM,
+    SENDAMTS,
+    SUBMITTER_WALLET,
 } from "./vars";
 
 export async function generateProposalData(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider){
@@ -21,26 +23,10 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
         callDatas: [],
     }
 
-    const wellToken = new ethers.Contract(
-        contracts.GOV_TOKEN,
-        require('../../src/abi/Well.json').abi,
-        provider
-    )
-    const dexRewarder = new ethers.Contract(
-        DEX_REWARDER,
-        require('../../src/abi/dexRewarder.json').abi,
-        provider
-    )
-    const stkWELL = new ethers.Contract(
-        contracts.SAFETY_MODULE,
-        require('../../src/abi/StakedWell.json').abi,
-        provider
-    )
-    const unitroller = new ethers.Contract(
-        contracts.COMPTROLLER,
-        require('../../src/abi/Comptroller.json').abi,
-        provider
-    )
+    const wellToken = contracts.GOV_TOKEN.getContract(provider)
+    const stkWELL = contracts.SAFETY_MODULE.getContract(provider)
+    const unitroller = contracts.COMPTROLLER.getContract(provider)
+    const dexRewarder = contracts.DEX_REWARDER.getContract(provider)
 
     // Send WELL from F-GLMR-LM to ecosystemReserve
     console.log(`    📝 Adding transferFrom call from ${F_GLMR_LM} (F_GLMR_LM) to ${ECOSYSTEM_RESERVE} (ECOSYSTEM_RESERVE) for ${EthersBigNumber.from(SENDAMTS["ECOSYSTEM_RESERVE"]).mul(mantissa)} WELL`)
@@ -54,11 +40,11 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
     )
 
     // Send WELL from F-GLMR-LM to unitroller
-    console.log(`    📝 Adding transferFrom call from ${F_GLMR_LM} (F_GLMR_LM) to ${contracts.COMPTROLLER} (COMPTROLLER) for ${EthersBigNumber.from(SENDAMTS["COMPTROLLER"]).mul(mantissa)} WELL`)
+    console.log(`    📝 Adding transferFrom call from ${F_GLMR_LM} (F_GLMR_LM) to ${contracts.COMPTROLLER.address} (COMPTROLLER) for ${EthersBigNumber.from(SENDAMTS["COMPTROLLER"]).mul(mantissa)} WELL`)
     await addProposalToPropData(wellToken, 'transferFrom',
         [
             F_GLMR_LM,
-            contracts.COMPTROLLER,
+            contracts.COMPTROLLER.address,
             EthersBigNumber.from(SENDAMTS["COMPTROLLER"]).mul(mantissa)
         ],
         proposalData
@@ -69,24 +55,24 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
     await addProposalToPropData(wellToken, 'transferFrom',
         [
             F_GLMR_LM,
-            contracts.TIMELOCK,
+            contracts.TIMELOCK.address,
             EthersBigNumber.from(SENDAMTS['DEX_REWARDER']).mul(mantissa)
         ],
         proposalData
     )
 
     // Approve dexRewarder to pull WELL from the timelock
-    console.log(`    📝 Adding approval call for ${DEX_REWARDER} (DEX_REWARDER) to pull WELL from the Timelock`)
+    console.log(`    📝 Adding approval call for ${contracts.DEX_REWARDER.address} (DEX_REWARDER) to pull WELL from the Timelock`)
     await addProposalToPropData(wellToken, 'approve',
         [
-            DEX_REWARDER,
+            contracts.DEX_REWARDER.address,
             EthersBigNumber.from(SENDAMTS['DEX_REWARDER']).mul(mantissa)
         ],
         proposalData
     )
 
     // Configure dexRewarder/trigger pulling the WELL rewards
-    console.log(`    📝 Adding addRewardInfo call to ${DEX_REWARDER} (DEX_REWARDER)`)
+    console.log(`    📝 Adding addRewardInfo call to ${contracts.DEX_REWARDER.address} (DEX_REWARDER)`)
     await addProposalToPropData(dexRewarder, 'addRewardInfo',
         [
             15,
@@ -99,7 +85,7 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
     )
 
     // Configure new reward speeds for stkWELL
-    console.log(`    📝 Adding configureAsset call to ${contracts.SAFETY_MODULE} (SAFETY_MODULE)`)
+    console.log(`    📝 Adding configureAsset call to ${contracts.SAFETY_MODULE.address} (SAFETY_MODULE)`)
     await addProposalToPropData(stkWELL, 'configureAsset',
         [
             EthersBigNumber.from(new BigNumber('2.086672008547010000').times(1e18).toFixed()),

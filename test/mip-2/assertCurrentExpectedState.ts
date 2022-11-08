@@ -7,11 +7,9 @@ import {
 import BigNumber from "bignumber.js";
 import {ContractBundle} from "@moonwell-fi/moonwell.js";
 import {
-    DEX_REWARDER,
     ECOSYSTEM_RESERVE,
     EXPECTED_STARTING_WELL_HOLDINGS,
     fGLMRLM,
-    STKWELL,
     WALLET_TO_PAY
 } from "./vars";
 
@@ -25,12 +23,12 @@ export async function assertCurrentExpectedState(contracts: ContractBundle, prov
         EXPECTED_STARTING_WELL_HOLDINGS['EcosystemReserve']
     )
     await assertRoundedWellBalance(contracts, provider,
-        contracts.COMPTROLLER,
+        contracts.COMPTROLLER.address,
         'Unitroller',
         EXPECTED_STARTING_WELL_HOLDINGS['Unitroller']
     )
     await assertRoundedWellBalance(contracts, provider,
-        DEX_REWARDER,
+        contracts.DEX_REWARDER.address,
         'Dex Rewarder',
         EXPECTED_STARTING_WELL_HOLDINGS['Dex Rewarder']
     )
@@ -47,14 +45,14 @@ export async function assertCurrentExpectedState(contracts: ContractBundle, prov
     )
 
     // Assert current reward speeds
-    await assertDexRewarderRewardsPerSec(DEX_REWARDER, provider,
+    await assertDexRewarderRewardsPerSec(contracts, provider,
         15,
         5,
         new BigNumber('2.384768009768010000').times(1e18)
     )
 
     // Assert current WELL emissions
-    await assertSTKWellEmissionsPerSecond(STKWELL, provider,
+    await assertSTKWellEmissionsPerSecond(contracts, provider,
         new BigNumber('1.192384004884').times(1e18)
     )
 

@@ -1,14 +1,10 @@
 import {ethers} from "ethers";
 import BigNumber from "bignumber.js";
-import {ContractBundle, Market} from "@moonwell-fi/moonwell.js";
-import {govTokenTicker, nativeTicker, percentTo18DigitMantissa} from "./index";
+import {ContractBundle, getDeployArtifact, Market} from "@moonwell-fi/moonwell.js";
+import {govTokenTicker, nativeTicker} from "./index";
 
 export async function assertRoundedWellBalance(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, targetAddress: string, name: string, balance: number){
-  const wellToken = new ethers.Contract(
-    contracts.GOV_TOKEN,
-    require('../abi/Well.json').abi,
-    provider
-  )
+  const wellToken = contracts.GOV_TOKEN.getContract(provider)
 
   const wellBalance = new BigNumber(
     (await wellToken.balanceOf(targetAddress)).toString()
@@ -24,13 +20,9 @@ export async function assertRoundedWellBalance(contracts: ContractBundle, provid
 
 }
 
-export async function assertDexRewarderRewardsPerSec(DEX_REWARDER: string, provider: ethers.providers.JsonRpcProvider, poolID: number, rewardSlot: number, expectedRewardsPerSec: BigNumber, ticker = "(WELL OR MFAM)"){
+export async function assertDexRewarderRewardsPerSec(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, poolID: number, rewardSlot: number, expectedRewardsPerSec: BigNumber, ticker = "(WELL OR MFAM)"){
   console.log("    [-] Checking dex rewarder...")
-  const dexRewarder = new ethers.Contract(
-    DEX_REWARDER,
-    require('../abi/dexRewarder.json').abi,
-    provider
-  )
+  const dexRewarder = contracts.DEX_REWARDER.getContract(provider)
 
   const currentRewardInfo = await dexRewarder.poolRewardInfo(poolID, rewardSlot - 1)
   console.log(`        ✅  Current rewards expire ${new Date(currentRewardInfo.endTimestamp * 1000)}`)
@@ -48,12 +40,8 @@ export async function assertDexRewarderRewardsPerSec(DEX_REWARDER: string, provi
   // poolRewardsPerSec
 }
 
-export async function assertSTKWellEmissionsPerSecond(STKWELL: string, provider: ethers.providers.JsonRpcProvider, expectedRewardsPerSec: BigNumber, ticker = "(WELL or MFAM)"){
-  const stkWELL = new ethers.Contract(
-    STKWELL,
-    require('../abi/StakedWell.json').abi,
-    provider
-  )
+export async function assertSTKWellEmissionsPerSecond(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, expectedRewardsPerSec: BigNumber, ticker = "(WELL or MFAM)"){
+  const stkWELL = contracts.SAFETY_MODULE.getContract(provider)
 
   const currentRewardInfo = await stkWELL.assets(stkWELL.address)
 
@@ -68,11 +56,7 @@ export async function assertSTKWellEmissionsPerSecond(STKWELL: string, provider:
 }
 
 export async function assertMarketGovTokenRewardSpeed(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, assetName: string, expectedSupplySpeed: BigNumber, expectedBorrowSpeed: BigNumber){
-  const unitroller = new ethers.Contract(
-    contracts.COMPTROLLER,
-    require('../abi/Comptroller.json').abi,
-    provider
-  )
+  const unitroller = contracts.COMPTROLLER.getContract(provider)
 
   // 0 = WELL, 1 = GLMR
   const supplyRewardSpeed = new BigNumber((await unitroller.supplyRewardSpeeds(0, contracts.MARKETS[assetName].mTokenAddress)).toString())
@@ -93,14 +77,10 @@ export async function assertMarketGovTokenRewardSpeed(contracts: ContractBundle,
 }
 
 export async function assertMarketNativeTokenRewardSpeed(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, assetName: string, expectedSupplySpeed: BigNumber, expectedBorrowSpeed: BigNumber){
-  const unitroller = new ethers.Contract(
-      contracts.COMPTROLLER,
-      require('../abi/Comptroller.json').abi,
-      provider
-  )
+  const comptroller = contracts.COMPTROLLER.getContract(provider)
 
   // 0 = WELL/MFAM, 1 = GLMR/MOVR
-  const supplyRewardSpeed = new BigNumber((await unitroller.supplyRewardSpeeds(1, contracts.MARKETS[assetName].mTokenAddress)).toString())
+  const supplyRewardSpeed = new BigNumber((await comptroller.supplyRewardSpeeds(1, contracts.MARKETS[assetName].mTokenAddress)).toString())
 
   if (supplyRewardSpeed.isEqualTo(expectedSupplySpeed)){
     console.log(`    ✅  The SUPPLY speed on the ${assetName} market is set to ${supplyRewardSpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec`)
@@ -108,7 +88,7 @@ export async function assertMarketNativeTokenRewardSpeed(contracts: ContractBund
     throw new Error(`The supply speed for ${assetName} was expected to be ${expectedSupplySpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec, found ${supplyRewardSpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec instead`)
   }
 
-  const borrowRewardSpeed = new BigNumber((await unitroller.borrowRewardSpeeds(1, contracts.MARKETS[assetName].mTokenAddress)).toString())
+  const borrowRewardSpeed = new BigNumber((await comptroller.borrowRewardSpeeds(1, contracts.MARKETS[assetName].mTokenAddress)).toString())
 
   if (borrowRewardSpeed.isEqualTo(expectedBorrowSpeed)){
     console.log(`    ✅  The BORROW speed on the ${assetName} market is set to ${borrowRewardSpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec`)
@@ -118,13 +98,9 @@ export async function assertMarketNativeTokenRewardSpeed(contracts: ContractBund
 }
 
 export async function assertMarketBorrowIsPaused(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market){
-  const unitroller = new ethers.Contract(
-      contracts.COMPTROLLER,
-      require('../abi/Comptroller.json').abi,
-      provider
-  )
+  const comptroller = contracts.COMPTROLLER.getContract(provider)
 
-  const result = await unitroller.borrowGuardianPaused(market.mTokenAddress)
+  const result = await comptroller.borrowGuardianPaused(market.mTokenAddress)
 
   if (result === false){
     throw new Error(`The ${market.name} market was expected to be paused but wasn't!`)
@@ -133,13 +109,9 @@ export async function assertMarketBorrowIsPaused(provider: ethers.providers.Json
   }
 }
 export async function assertMarketBorrowIsNOTPaused(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market){
-  const unitroller = new ethers.Contract(
-      contracts.COMPTROLLER,
-      require('../abi/Comptroller.json').abi,
-      provider
-  )
+  const comptroller = contracts.COMPTROLLER.getContract(provider)
 
-  const result = await unitroller.borrowGuardianPaused(market.mTokenAddress)
+  const result = await comptroller.borrowGuardianPaused(market.mTokenAddress)
 
   if (result === true){
     throw new Error(`The ${market.name} market was expected to NOT be paused but was!`)
@@ -149,13 +121,9 @@ export async function assertMarketBorrowIsNOTPaused(provider: ethers.providers.J
 }
 
 export async function assertMarketSupplyingIsPaused(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market){
-  const unitroller = new ethers.Contract(
-      contracts.COMPTROLLER,
-      require('../abi/Comptroller.json').abi,
-      provider
-  )
+  const comptroller = contracts.COMPTROLLER.getContract(provider)
 
-  const result = await unitroller.mintGuardianPaused(market.mTokenAddress)
+  const result = await comptroller.mintGuardianPaused(market.mTokenAddress)
 
   if (result === false){
     throw new Error(`The ${market.name} market was expected to be paused but wasn't!`)
@@ -164,13 +132,9 @@ export async function assertMarketSupplyingIsPaused(provider: ethers.providers.J
   }
 }
 export async function assertMarketSupplyingIsNOTPaused(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market){
-  const unitroller = new ethers.Contract(
-      contracts.COMPTROLLER,
-      require('../abi/Comptroller.json').abi,
-      provider
-  )
+  const comptroller = contracts.COMPTROLLER.getContract(provider)
 
-  const result = await unitroller.mintGuardianPaused(market.mTokenAddress)
+  const result = await comptroller.mintGuardianPaused(market.mTokenAddress)
 
   if (result === true){
     throw new Error(`The ${market.name} market was expected to be paused but wasn't!`)
@@ -180,13 +144,9 @@ export async function assertMarketSupplyingIsNOTPaused(provider: ethers.provider
 }
 
 export async function assertMarketCFIsNonZero(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market){
-  const unitroller = new ethers.Contract(
-      contracts.COMPTROLLER,
-      require('../abi/Comptroller.json').abi,
-      provider
-  )
+  const comptroller = contracts.COMPTROLLER.getContract(provider)
 
-  const marketData = await unitroller.markets(market.mTokenAddress)
+  const marketData = await comptroller.markets(market.mTokenAddress)
 
   const mantissaFormatted = new BigNumber(marketData.collateralFactorMantissa.toString()).div(1e18)
 
@@ -197,13 +157,9 @@ export async function assertMarketCFIsNonZero(provider: ethers.providers.JsonRpc
   }
 }
 export async function assertMarketCFIsZero(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market){
-  const unitroller = new ethers.Contract(
-      contracts.COMPTROLLER,
-      require('../abi/Comptroller.json').abi,
-      provider
-  )
+  const comptroller = contracts.COMPTROLLER.getContract(provider)
 
-  const marketData = await unitroller.markets(market.mTokenAddress)
+  const marketData = await comptroller.markets(market.mTokenAddress)
 
   const mantissaFormatted = new BigNumber(marketData.collateralFactorMantissa.toString()).div(1e18)
 
@@ -215,13 +171,9 @@ export async function assertMarketCFIsZero(provider: ethers.providers.JsonRpcPro
 }
 
 export async function assertMarketCFEqualsPercent(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market, expectedPercent: number){
-  const unitroller = new ethers.Contract(
-      contracts.COMPTROLLER,
-      require('../abi/Comptroller.json').abi,
-      provider
-  )
+  const comptroller = contracts.COMPTROLLER.getContract(provider)
 
-  const marketData = await unitroller.markets(market.mTokenAddress)
+  const marketData = await comptroller.markets(market.mTokenAddress)
 
   const mantissaFormatted = new BigNumber(marketData.collateralFactorMantissa.toString()).div(1e18)
 
@@ -235,7 +187,7 @@ export async function assertMarketCFEqualsPercent(provider: ethers.providers.Jso
 export async function assertMarketRFIsNOTOneHundred(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market){
   const mToken = new ethers.Contract(
       market.mTokenAddress,
-      require('../abi/MToken.json').abi,
+      getDeployArtifact('MToken').abi,
       provider
   )
 
@@ -253,7 +205,7 @@ export async function assertMarketRFIsNOTOneHundred(provider: ethers.providers.J
 export async function assertMarketRFIsOneHundred(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market){
   const mToken = new ethers.Contract(
       market.mTokenAddress,
-      require('../abi/MToken.json').abi,
+      getDeployArtifact('MToken').abi,
       provider
   )
 
@@ -269,13 +221,9 @@ export async function assertMarketRFIsOneHundred(provider: ethers.providers.Json
 }
 
 export async function assertTransferGuardianPaused(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle){
-  const unitroller = new ethers.Contract(
-      contracts.COMPTROLLER,
-      require('../abi/Comptroller.json').abi,
-      provider
-  )
+  const comptroller = contracts.COMPTROLLER.getContract(provider)
 
-  const transferGuardianPaused = await unitroller.transferGuardianPaused()
+  const transferGuardianPaused = await comptroller.transferGuardianPaused()
 
   if (transferGuardianPaused === false){
     throw new Error(`Transfers are NOT paused, and expected to be paused`)
@@ -285,13 +233,9 @@ export async function assertTransferGuardianPaused(provider: ethers.providers.Js
 }
 
 export async function assertTransferGuardianIsNotPaused(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle){
-  const unitroller = new ethers.Contract(
-      contracts.COMPTROLLER,
-      require('../abi/Comptroller.json').abi,
-      provider
-  )
+  const comptroller = contracts.COMPTROLLER.getContract(provider)
 
-  const transferGuardianPaused = await unitroller.transferGuardianPaused()
+  const transferGuardianPaused = await comptroller.transferGuardianPaused()
 
   if (transferGuardianPaused === true){
     throw new Error(`Transfers ARE paused, and expected to NOT be paused`)

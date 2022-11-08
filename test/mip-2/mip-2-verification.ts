@@ -1,7 +1,7 @@
 import {ethers} from 'ethers'
 import {
     passGovProposal,
-    setupDeployerForGovernance,
+    setupDeployerAndEnvForGovernance,
     sleep,
     startGanache
 } from "../../src";
@@ -35,7 +35,7 @@ test("mip-2-verifications", async () => {
 
         // Go transfer WELL to the deployer key from the cGLMRAPPDEV treasury, delegate those well to the deployer,
         // and assert the deployer has enough voting power to pass a proposal
-        await setupDeployerForGovernance(contracts, provider, cGLMRAPPDEV)
+        await setupDeployerAndEnvForGovernance(contracts, provider, cGLMRAPPDEV, FORK_BLOCK)
 
         await assertCurrentExpectedState(contracts, provider)
 

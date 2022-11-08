@@ -21,13 +21,9 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
         callDatas: [],
     }
 
-    const unitroller = new ethers.Contract(
-        contracts.COMPTROLLER,
-        require('../../src/abi/Comptroller.json').abi,
-        provider
-    )
+    const comptroller = contracts.COMPTROLLER.getContract(provider)
 
-    await addProposalToPropData(unitroller, '_setCollateralFactor',
+    await addProposalToPropData(comptroller, '_setCollateralFactor',
         [
             contracts.MARKETS['ETH.multi'].mTokenAddress,
             cfPercentToMantissa(62)
@@ -35,7 +31,7 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
         proposalData
     )
 
-    await addProposalToPropData(unitroller, '_setCollateralFactor',
+    await addProposalToPropData(comptroller, '_setCollateralFactor',
         [
             contracts.MARKETS['USDT.multi'].mTokenAddress,
             cfPercentToMantissa(42)
@@ -43,7 +39,7 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
         proposalData
     )
 
-    await addProposalToPropData(unitroller, '_setCollateralFactor',
+    await addProposalToPropData(comptroller, '_setCollateralFactor',
         [
             contracts.MARKETS['FRAX'].mTokenAddress,
             cfPercentToMantissa(59.5)
