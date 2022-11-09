@@ -10,8 +10,8 @@ import {
   assertCF,
   assertMTokenProxySetCorrectly,
   assertMTokenProxyByteCodeMatches,
-  assertMarketGovTokenRewardSpeed,
-  assertMarketNativeTokenRewardSpeed
+  assertMarketGovTokenRewardSpeedWithAddress,
+  assertMarketNativeTokenRewardSpeedWithAddress
 } from "../../src/verification/assertions";
 import {ContractBundle, getContract} from "@moonwell-fi/moonwell.js";
 import BigNumber from "bignumber.js";
@@ -34,6 +34,9 @@ export async function assertExpectedEndState(
     // Market has the expected values in storage.
     const market = getContract('MErc20Delegator', expectedMarketAddress, provider)
     await assertStorageAddress(market, tokenAddress, 'underlying')
+    await assertStorageAddress(market, contracts.COMPTROLLER.address, 'comptroller')
+    await assertStorageAddress(market, contracts.INTEREST_RATE_MODEL.address, 'interestRateModel')
+    await assertStorageAddress(market, ethers.constants.AddressZero, 'pendingAdmin')
     await assertStorageString(market, mTokenName, 'name')
     await assertStorageString(market, mTokenSymbol, 'symbol')
 
@@ -58,6 +61,6 @@ export async function assertExpectedEndState(
     // Assert no supply speeds, and a very slow borrow speed.
     const expectedBorrowSpeed = new BigNumber(1)
     const expectedSupplySpeed = new BigNumber(0)
-    await assertMarketGovTokenRewardSpeed(contracts, provider, tokenSymbol, expectedSupplySpeed, expectedBorrowSpeed)
-    await assertMarketNativeTokenRewardSpeed(contracts, provider, tokenSymbol, expectedSupplySpeed, expectedBorrowSpeed)
+    await assertMarketGovTokenRewardSpeedWithAddress(contracts, provider, expectedMarketAddress, expectedSupplySpeed, expectedBorrowSpeed)
+    await assertMarketNativeTokenRewardSpeedWithAddress(contracts, provider, expectedMarketAddress, expectedSupplySpeed, expectedBorrowSpeed)
 }

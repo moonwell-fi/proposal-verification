@@ -1,6 +1,6 @@
 import {ethers} from "ethers";
 import BigNumber from "bignumber.js";
-import {ContractBundle, getContract, getDeployArtifact, Market} from "@moonwell-fi/moonwell.js";
+import {ContractBundle, getContract, getDeployArtifact, getNativeTokenSymbol, Market} from "@moonwell-fi/moonwell.js";
 import {govTokenTicker, nativeTicker, percentTo18DigitMantissa} from "./index";
 
 export async function assertRoundedWellBalance(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, targetAddress: string, name: string, balance: number){
@@ -58,6 +58,8 @@ export async function assertSTKWellEmissionsPerSecond(contracts: ContractBundle,
 export async function assertMarketGovTokenRewardSpeed(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, assetName: string, expectedSupplySpeed: BigNumber, expectedBorrowSpeed: BigNumber){
   const unitroller = contracts.COMPTROLLER.getContract(provider)
 
+  // const mTokenAddress = await getmTokenContractAddress(contracts, provider, assetName)
+
   // 0 = WELL, 1 = GLMR
   const supplyRewardSpeed = new BigNumber((await unitroller.supplyRewardSpeeds(0, contracts.MARKETS[assetName].mTokenAddress)).toString())
 
@@ -76,8 +78,45 @@ export async function assertMarketGovTokenRewardSpeed(contracts: ContractBundle,
   }
 }
 
+// const getmTokenContractAddress = async (
+//   contracts: ContractBundle, 
+//   provider: ethers.providers.JsonRpcProvider, 
+//   underlyingSymbol: string
+// ): Promise<string> => {
+//   // We cannot call 'underlying' on the native token, so special case it.
+//   if (underlyingSymbol === nativeTicker(contracts)) {
+//     return contracts.MARKETS[underlyingSymbol].mTokenAddress
+//   }
+
+//   const unitroller = contracts.COMPTROLLER.getContract(provider)
+
+//   // Note that we fetch contracts from the unitroller, rather than using the static list in moonwell.js. This avoids the case
+//   // where a future version of moonwell.js includes a new market which would break this assertion.
+//   const allMarkets = await unitroller.getAllMarkets()
+//   const marketContracts = allMarkets.map((market: string) => {
+//     return getContract('MErc20Delegator', market, provider)
+//   })
+
+//   for (const marketContract of marketContracts) {
+//     // Underlying will fail for the native asset.
+//     let tokenAddress
+//     try {
+//       tokenAddress = await marketContract.underlying()
+//     } catch (e: unknown) {
+//       continue
+//     }
+//     const underlyingToken = getContract('MErc20Delegator', tokenAddress, provider)
+
+//     if (await underlyingToken.symbol() === underlyingSymbol) {
+//       return tokenAddress
+//     }
+//   }
+//   throw new Error(`Could not locate underlying token with symbol ${underlyingSymbol}`)
+// }
+    
 export async function assertMarketNativeTokenRewardSpeed(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, assetName: string, expectedSupplySpeed: BigNumber, expectedBorrowSpeed: BigNumber){
   const comptroller = contracts.COMPTROLLER.getContract(provider)
+  // const mTokenAddress = await getmTokenContractAddress(contracts, provider, assetName)
 
   // 0 = WELL/MFAM, 1 = GLMR/MOVR
   const supplyRewardSpeed = new BigNumber((await comptroller.supplyRewardSpeeds(1, contracts.MARKETS[assetName].mTokenAddress)).toString())
@@ -96,6 +135,52 @@ export async function assertMarketNativeTokenRewardSpeed(contracts: ContractBund
     throw new Error(`The borrow speed for ${assetName} was expected to be ${expectedBorrowSpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec, found ${borrowRewardSpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec instead`)
   }
 }
+
+export async function assertMarketNativeTokenRewardSpeedWithAddress(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, mTokenAddress: string, expectedSupplySpeed: BigNumber, expectedBorrowSpeed: BigNumber){
+  const comptroller = contracts.COMPTROLLER.getContract(provider)
+  // const mTokenAddress = await getmTokenContractAddress(contracts, provider, assetName)
+
+  // 0 = WELL/MFAM, 1 = GLMR/MOVR
+  const supplyRewardSpeed = new BigNumber((await comptroller.supplyRewardSpeeds(1, mTokenAddress)).toString())
+
+  if (supplyRewardSpeed.isEqualTo(expectedSupplySpeed)){
+    console.log(`    ✅  The SUPPLY speed on the ${mTokenAddress} market is set to ${supplyRewardSpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec`)
+  } else {
+    throw new Error(`The supply speed for ${mTokenAddress} was expected to be ${expectedSupplySpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec, found ${supplyRewardSpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec instead`)
+  }
+
+  const borrowRewardSpeed = new BigNumber((await comptroller.borrowRewardSpeeds(1, mTokenAddress)).toString())
+
+  if (borrowRewardSpeed.isEqualTo(expectedBorrowSpeed)){
+    console.log(`    ✅  The BORROW speed on the ${mTokenAddress} market is set to ${borrowRewardSpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec`)
+  } else {
+    throw new Error(`The borrow speed for ${mTokenAddress} was expected to be ${expectedBorrowSpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec, found ${borrowRewardSpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec instead`)
+  }
+}
+
+export async function assertMarketGovTokenRewardSpeedWithAddress(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, mTokenAddress: string, expectedSupplySpeed: BigNumber, expectedBorrowSpeed: BigNumber){
+  const unitroller = contracts.COMPTROLLER.getContract(provider)
+
+  // const mTokenAddress = await getmTokenContractAddress(contracts, provider, assetName)
+
+  // 0 = WELL, 1 = GLMR
+  const supplyRewardSpeed = new BigNumber((await unitroller.supplyRewardSpeeds(0, mTokenAddress)).toString())
+
+  if (supplyRewardSpeed.isEqualTo(expectedSupplySpeed)){
+    console.log(`    ✅  The SUPPLY speed on the ${mTokenAddress} market is set to ${supplyRewardSpeed.div(1e18).toFixed(18)} ${govTokenTicker(contracts)}/sec`)
+  } else {
+    throw new Error(`The supply speed for ${mTokenAddress} was expected to be ${expectedSupplySpeed.div(1e18).toFixed(18)} ${govTokenTicker(contracts)}/sec, found ${supplyRewardSpeed.div(1e18).toFixed(18)} ${govTokenTicker(contracts)}/sec instead`)
+  }
+
+  const borrowRewardSpeed = new BigNumber((await unitroller.borrowRewardSpeeds(0, mTokenAddress)).toString())
+
+  if (borrowRewardSpeed.isEqualTo(expectedBorrowSpeed)){
+    console.log(`    ✅  The BORROW speed on the ${mTokenAddress} market is set to ${borrowRewardSpeed.div(1e18).toFixed(18)} ${govTokenTicker(contracts)}/sec`)
+  } else {
+    throw new Error(`The borrow speed for ${mTokenAddress} was expected to be ${expectedBorrowSpeed.div(1e18).toFixed(18)} ${govTokenTicker(contracts)}/sec, found ${borrowRewardSpeed.div(1e18).toFixed(18)} ${govTokenTicker(contracts)}/sec instead`)
+  }
+}
+
 
 export async function assertMarketBorrowIsPaused(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market){
   const comptroller = contracts.COMPTROLLER.getContract(provider)
