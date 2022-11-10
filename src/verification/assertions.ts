@@ -297,38 +297,26 @@ export async function assertTransferGuardianIsNotPaused(provider: ethers.provide
 /**
  * Assert a market is not listed by querying the comptroller. 
  * 
- * NOTE: This function will fail if given the native asset.
- * TODO(lunar-eng): Fix the above note. 
- * 
  * @param provider An ethers provider.
  * @param contracts A contract bundle.
  * @param targetUnderlyingTokenAddress The address of an ERC-20 token to ensure is not listed. 
  */
-export async function assertMarketIsNotListed(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, targetUnderlyingTokenAddress: string){
-  const unitroller = contracts.COMPTROLLER.getContract(provider)
+export async function assertMarketIsNotListed(
+  provider: ethers.providers.JsonRpcProvider, 
+  contracts: ContractBundle, 
+  targetUnderlyingTokenAddress: string
+){
+  // Get the underlying token symbol.
+  const underlyingToken = getContract('MErc20Delegator', targetUnderlyingTokenAddress, provider)
+  const underlyingSymbol = await underlyingToken.symbol()
 
-  // Note that we fetch contracts from the unitroller, rather than using the static list in moonwell.js. This avoids the case
-  // where a future version of moonwell.js includes a new market which would break this assertion.
-  const allMarkets = await unitroller.getAllMarkets()
-
-  const marketContracts = allMarkets.map((market: string) => {
-    return getContract('MErc20Delegator', market, provider)
-  })
-
-  for (const marketContract of marketContracts) {
-    // Underlying will fail for the native asset.
-    let tokenAddress
-    try {
-      tokenAddress = await marketContract.underlying()
-    } catch (e: unknown) {
-      continue
-    }
-
-    if (addressesMatch(tokenAddress, targetUnderlyingTokenAddress)) {
-      throw new Error(`Market ${targetUnderlyingTokenAddress} is listed!`)
-    }
+  // getMarketAddressForUnderlyingSymbol will throw if the market is not listed.
+  try {
+    await getMarketAddressForUnderlyingSymbol(contracts, provider, underlyingSymbol)
+    throw new Error(`Market ${targetUnderlyingTokenAddress} is listed!`)
+  } catch (e: unknown) {
+    console.log(`    ✅ Market is not listed`)
   }
-  console.log(`    ✅ Market is not listed`)
 }
 
 /**
