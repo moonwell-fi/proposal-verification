@@ -553,12 +553,10 @@ const getMarketAddressForUnderlyingSymbol = async (
   })
 
   for (const marketContract of marketContracts) {
-    console.log(`searching for ${underlyingSymbol}`)
     // Skip any known markets, since we already know that this is a new market. 
     // Conveniently, this stops us from hitting a snag where we try to call 'underlying' on the native asset or any 
     // XC Asset precompiles.
     if (isKnownMarket(contracts, marketContract.address)) {
-      console.log('skip')
       continue
     }
 
@@ -566,11 +564,8 @@ const getMarketAddressForUnderlyingSymbol = async (
     const tokenAddress = await marketContract.underlying()
     const underlyingToken = getContract('MErc20Delegator', tokenAddress, provider)
     const symbol = await underlyingToken.symbol()
-    console.log(`found: ${symbol}`)
     if (symbol === underlyingSymbol) {
-      console.log(`searching for ${underlyingSymbol}`)
-
-      return tokenAddress
+      return marketContract.address
     }
   }
   throw new Error(`Could not locate underlying token with symbol ${underlyingSymbol}`)
