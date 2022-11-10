@@ -29,8 +29,8 @@ test("market-deployer", async () => {
   try {
         const tokenToList = "0x27292cf0016e5df1d8b37306b2a98588acbd6fca" // axlATOM
         const chainlinkAddress = "0x4F152D143c97B5e8d2293bc5B2380600f274a5dd" // ATOM
-        const tokenSymbol ="axlATOM"
-        const tokenDecimals = 6
+        const tokenSymbol = "axlATOM"
+        const tokenDecimals =  6
         const mTokenName = "Moonwell axlATOM"
         const mTokenSymbol = "maxlATOM"
         const reserveFactorPercent = 60
