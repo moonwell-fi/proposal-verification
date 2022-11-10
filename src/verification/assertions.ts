@@ -78,7 +78,6 @@ export async function assertMarketGovTokenRewardSpeed(contracts: ContractBundle,
   }
 }
 
-
 export async function assertMarketNativeTokenRewardSpeed(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, assetName: string, expectedSupplySpeed: BigNumber, expectedBorrowSpeed: BigNumber){
   const comptroller = contracts.COMPTROLLER.getContract(provider)
   const mTokenAddress = await getMarketAddressForUnderlyingSymbol(contracts, provider, assetName)
@@ -100,52 +99,6 @@ export async function assertMarketNativeTokenRewardSpeed(contracts: ContractBund
     throw new Error(`The borrow speed for ${assetName} was expected to be ${expectedBorrowSpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec, found ${borrowRewardSpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec instead`)
   }
 }
-
-export async function assertMarketNativeTokenRewardSpeedWithAddress(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, mTokenAddress: string, expectedSupplySpeed: BigNumber, expectedBorrowSpeed: BigNumber){
-  const comptroller = contracts.COMPTROLLER.getContract(provider)
-  // const mTokenAddress = await getmTokenContractAddress(contracts, provider, assetName)
-
-  // 0 = WELL/MFAM, 1 = GLMR/MOVR
-  const supplyRewardSpeed = new BigNumber((await comptroller.supplyRewardSpeeds(1, mTokenAddress)).toString())
-
-  if (supplyRewardSpeed.isEqualTo(expectedSupplySpeed)){
-    console.log(`    ✅  The SUPPLY speed on the ${mTokenAddress} market is set to ${supplyRewardSpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec`)
-  } else {
-    throw new Error(`The supply speed for ${mTokenAddress} was expected to be ${expectedSupplySpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec, found ${supplyRewardSpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec instead`)
-  }
-
-  const borrowRewardSpeed = new BigNumber((await comptroller.borrowRewardSpeeds(1, mTokenAddress)).toString())
-
-  if (borrowRewardSpeed.isEqualTo(expectedBorrowSpeed)){
-    console.log(`    ✅  The BORROW speed on the ${mTokenAddress} market is set to ${borrowRewardSpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec`)
-  } else {
-    throw new Error(`The borrow speed for ${mTokenAddress} was expected to be ${expectedBorrowSpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec, found ${borrowRewardSpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec instead`)
-  }
-}
-
-export async function assertMarketGovTokenRewardSpeedWithAddress(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, mTokenAddress: string, expectedSupplySpeed: BigNumber, expectedBorrowSpeed: BigNumber){
-  const unitroller = contracts.COMPTROLLER.getContract(provider)
-
-  // const mTokenAddress = await getmTokenContractAddress(contracts, provider, assetName)
-
-  // 0 = WELL, 1 = GLMR
-  const supplyRewardSpeed = new BigNumber((await unitroller.supplyRewardSpeeds(0, mTokenAddress)).toString())
-
-  if (supplyRewardSpeed.isEqualTo(expectedSupplySpeed)){
-    console.log(`    ✅  The SUPPLY speed on the ${mTokenAddress} market is set to ${supplyRewardSpeed.div(1e18).toFixed(18)} ${govTokenTicker(contracts)}/sec`)
-  } else {
-    throw new Error(`The supply speed for ${mTokenAddress} was expected to be ${expectedSupplySpeed.div(1e18).toFixed(18)} ${govTokenTicker(contracts)}/sec, found ${supplyRewardSpeed.div(1e18).toFixed(18)} ${govTokenTicker(contracts)}/sec instead`)
-  }
-
-  const borrowRewardSpeed = new BigNumber((await unitroller.borrowRewardSpeeds(0, mTokenAddress)).toString())
-
-  if (borrowRewardSpeed.isEqualTo(expectedBorrowSpeed)){
-    console.log(`    ✅  The BORROW speed on the ${mTokenAddress} market is set to ${borrowRewardSpeed.div(1e18).toFixed(18)} ${govTokenTicker(contracts)}/sec`)
-  } else {
-    throw new Error(`The borrow speed for ${mTokenAddress} was expected to be ${expectedBorrowSpeed.div(1e18).toFixed(18)} ${govTokenTicker(contracts)}/sec, found ${borrowRewardSpeed.div(1e18).toFixed(18)} ${govTokenTicker(contracts)}/sec instead`)
-  }
-}
-
 
 export async function assertMarketBorrowIsPaused(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market){
   const comptroller = contracts.COMPTROLLER.getContract(provider)
