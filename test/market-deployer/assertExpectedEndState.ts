@@ -10,8 +10,8 @@ import {
   assertCF,
   assertMTokenProxySetCorrectly,
   assertMTokenProxyByteCodeMatches,
-  assertMarketGovTokenRewardSpeedWithAddress,
-  assertMarketNativeTokenRewardSpeedWithAddress
+  assertMarketNativeTokenRewardSpeed,
+  assertMarketGovTokenRewardSpeed
 } from "../../src/verification/assertions";
 import {ContractBundle, getContract} from "@moonwell-fi/moonwell.js";
 import BigNumber from "bignumber.js";
@@ -61,6 +61,6 @@ export async function assertExpectedEndState(
     // Assert no supply speeds, and a very slow borrow speed.
     const expectedBorrowSpeed = new BigNumber(1)
     const expectedSupplySpeed = new BigNumber(0)
-    await assertMarketGovTokenRewardSpeedWithAddress(contracts, provider, expectedMarketAddress, expectedSupplySpeed, expectedBorrowSpeed)
-    await assertMarketNativeTokenRewardSpeedWithAddress(contracts, provider, expectedMarketAddress, expectedSupplySpeed, expectedBorrowSpeed)
+    await assertMarketNativeTokenRewardSpeed(contracts, provider, tokenSymbol, expectedSupplySpeed, expectedBorrowSpeed)
+    await assertMarketGovTokenRewardSpeed(contracts, provider, tokenSymbol, expectedSupplySpeed, expectedBorrowSpeed)
 }
