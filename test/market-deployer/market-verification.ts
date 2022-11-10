@@ -27,7 +27,7 @@ test("market-deployer", async () => {
   await sleep(5)
 
   try {
-        const tokenToList = "0x511ab53f793683763e5a8829738301368a2411e3"  //"0x27292cf0016e5df1d8b37306b2a98588acbd6fca" // axlATOM
+        const tokenToList = "g" // axlATOM
         const chainlinkAddress = "0x4F152D143c97B5e8d2293bc5B2380600f274a5dd" // ATOM
         const tokenSymbol = "WELL" //  "axlATOM"
         const tokenDecimals = 18 //  6
