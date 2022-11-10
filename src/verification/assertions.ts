@@ -4,7 +4,7 @@ import {ContractBundle, getContract, getDeployArtifact, Market} from "@moonwell-
 import {govTokenTicker, nativeTicker, percentTo18DigitMantissa} from "./index";
 
 export async function assertRoundedWellBalance(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, targetAddress: string, name: string, balance: number){
-  const wellToken = contracts.GOV_TOKEN.getContract(provider)
+  const wellToken = contracts.GOV_TOKEN.contract.connect(provider)
 
   const wellBalance = new BigNumber(
     (await wellToken.balanceOf(targetAddress)).toString()
@@ -22,7 +22,7 @@ export async function assertRoundedWellBalance(contracts: ContractBundle, provid
 
 export async function assertDexRewarderRewardsPerSec(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, poolID: number, rewardSlot: number, expectedRewardsPerSec: BigNumber, ticker = "(WELL OR MFAM)"){
   console.log("    [-] Checking dex rewarder...")
-  const dexRewarder = contracts.DEX_REWARDER.getContract(provider)
+  const dexRewarder = contracts.DEX_REWARDER.contract.connect(provider)
 
   const currentRewardInfo = await dexRewarder.poolRewardInfo(poolID, rewardSlot - 1)
   console.log(`        ✅  Current rewards expire ${new Date(currentRewardInfo.endTimestamp * 1000)}`)
@@ -41,7 +41,7 @@ export async function assertDexRewarderRewardsPerSec(contracts: ContractBundle, 
 }
 
 export async function assertSTKWellEmissionsPerSecond(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, expectedRewardsPerSec: BigNumber, ticker = "(WELL or MFAM)"){
-  const stkWELL = contracts.SAFETY_MODULE.getContract(provider)
+  const stkWELL = contracts.SAFETY_MODULE.contract.connect(provider)
 
   const currentRewardInfo = await stkWELL.assets(stkWELL.address)
 
@@ -56,7 +56,7 @@ export async function assertSTKWellEmissionsPerSecond(contracts: ContractBundle,
 }
 
 export async function assertMarketGovTokenRewardSpeed(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, assetName: string, expectedSupplySpeed: BigNumber, expectedBorrowSpeed: BigNumber){
-  const unitroller = contracts.COMPTROLLER.getContract(provider)
+  const unitroller = contracts.COMPTROLLER.contract.connect(provider)
 
   // 0 = WELL, 1 = GLMR
   const supplyRewardSpeed = new BigNumber((await unitroller.supplyRewardSpeeds(0, contracts.MARKETS[assetName].mTokenAddress)).toString())
@@ -77,7 +77,7 @@ export async function assertMarketGovTokenRewardSpeed(contracts: ContractBundle,
 }
 
 export async function assertMarketNativeTokenRewardSpeed(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, assetName: string, expectedSupplySpeed: BigNumber, expectedBorrowSpeed: BigNumber){
-  const comptroller = contracts.COMPTROLLER.getContract(provider)
+  const comptroller = contracts.COMPTROLLER.contract.connect(provider)
 
   // 0 = WELL/MFAM, 1 = GLMR/MOVR
   const supplyRewardSpeed = new BigNumber((await comptroller.supplyRewardSpeeds(1, contracts.MARKETS[assetName].mTokenAddress)).toString())
@@ -98,7 +98,7 @@ export async function assertMarketNativeTokenRewardSpeed(contracts: ContractBund
 }
 
 export async function assertMarketBorrowIsPaused(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market){
-  const comptroller = contracts.COMPTROLLER.getContract(provider)
+  const comptroller = contracts.COMPTROLLER.contract.connect(provider)
 
   const result = await comptroller.borrowGuardianPaused(market.mTokenAddress)
 
@@ -109,7 +109,7 @@ export async function assertMarketBorrowIsPaused(provider: ethers.providers.Json
   }
 }
 export async function assertMarketBorrowIsNOTPaused(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market){
-  const comptroller = contracts.COMPTROLLER.getContract(provider)
+  const comptroller = contracts.COMPTROLLER.contract.connect(provider)
 
   const result = await comptroller.borrowGuardianPaused(market.mTokenAddress)
 
@@ -121,7 +121,7 @@ export async function assertMarketBorrowIsNOTPaused(provider: ethers.providers.J
 }
 
 export async function assertMarketSupplyingIsPaused(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market){
-  const comptroller = contracts.COMPTROLLER.getContract(provider)
+  const comptroller = contracts.COMPTROLLER.contract.connect(provider)
 
   const result = await comptroller.mintGuardianPaused(market.mTokenAddress)
 
@@ -132,7 +132,7 @@ export async function assertMarketSupplyingIsPaused(provider: ethers.providers.J
   }
 }
 export async function assertMarketSupplyingIsNOTPaused(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market){
-  const comptroller = contracts.COMPTROLLER.getContract(provider)
+  const comptroller = contracts.COMPTROLLER.contract.connect(provider)
 
   const result = await comptroller.mintGuardianPaused(market.mTokenAddress)
 
@@ -144,7 +144,7 @@ export async function assertMarketSupplyingIsNOTPaused(provider: ethers.provider
 }
 
 export async function assertMarketCFIsNonZero(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market){
-  const comptroller = contracts.COMPTROLLER.getContract(provider)
+  const comptroller = contracts.COMPTROLLER.contract.connect(provider)
 
   const marketData = await comptroller.markets(market.mTokenAddress)
 
@@ -157,7 +157,7 @@ export async function assertMarketCFIsNonZero(provider: ethers.providers.JsonRpc
   }
 }
 export async function assertMarketCFIsZero(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market){
-  const comptroller = contracts.COMPTROLLER.getContract(provider)
+  const comptroller = contracts.COMPTROLLER.contract.connect(provider)
 
   const marketData = await comptroller.markets(market.mTokenAddress)
 
@@ -171,7 +171,7 @@ export async function assertMarketCFIsZero(provider: ethers.providers.JsonRpcPro
 }
 
 export async function assertMarketCFEqualsPercent(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market, expectedPercent: number){
-  const comptroller = contracts.COMPTROLLER.getContract(provider)
+  const comptroller = contracts.COMPTROLLER.contract.connect(provider)
 
   const marketData = await comptroller.markets(market.mTokenAddress)
 
@@ -221,7 +221,7 @@ export async function assertMarketRFIsOneHundred(provider: ethers.providers.Json
 }
 
 export async function assertTransferGuardianPaused(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle){
-  const comptroller = contracts.COMPTROLLER.getContract(provider)
+  const comptroller = contracts.COMPTROLLER.contract.connect(provider)
 
   const transferGuardianPaused = await comptroller.transferGuardianPaused()
 
@@ -233,7 +233,7 @@ export async function assertTransferGuardianPaused(provider: ethers.providers.Js
 }
 
 export async function assertTransferGuardianIsNotPaused(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle){
-  const comptroller = contracts.COMPTROLLER.getContract(provider)
+  const comptroller = contracts.COMPTROLLER.contract.connect(provider)
 
   const transferGuardianPaused = await comptroller.transferGuardianPaused()
 
@@ -255,7 +255,7 @@ export async function assertTransferGuardianIsNotPaused(provider: ethers.provide
  * @param targetUnderlyingTokenAddress The address of an ERC-20 token to ensure is not listed. 
  */
 export async function assertMarketIsNotListed(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, targetUnderlyingTokenAddress: string){
-  const unitroller = contracts.COMPTROLLER.getContract(provider)
+  const unitroller = contracts.COMPTROLLER.contract.connect(provider)
 
   // Note that we fetch contracts from the unitroller, rather than using the static list in moonwell.js. This avoids the case
   // where a future version of moonwell.js includes a new market which would break this assertion.
@@ -293,7 +293,7 @@ export async function assertMarketIsNotListed(provider: ethers.providers.JsonRpc
  * @param expectedAddress The expected address.
  */
  export async function assertMarketIsListed(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, targetUnderlyingTokenAddress: string, expectedAddress: string){
-  const unitroller = contracts.COMPTROLLER.getContract(provider)
+  const unitroller = contracts.COMPTROLLER.contract.connect(provider)
 
   // Note that we fetch contracts from the unitroller, rather than using the static list in moonwell.js. This avoids the case
   // where a future version of moonwell.js includes a new market which would break this assertion.
@@ -334,7 +334,7 @@ export async function assertMarketIsNotListed(provider: ethers.providers.JsonRpc
  * @param targetSymbol The symbol of an asset to query.
  */
 export async function assertChainlinkFeedIsNotRegistered(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, targetSymbol: string) {
-  const oracle = contracts.ORACLE.getContract(provider)
+  const oracle = contracts.ORACLE.contract.connect(provider)
 
   const feed = await oracle.getFeed(targetSymbol)
   if (feed !== ethers.constants.AddressZero) {
@@ -351,7 +351,7 @@ export async function assertChainlinkFeedIsNotRegistered(provider: ethers.provid
  * @param mtokenAddress The market to inspect.
  */
  export async function assertChainlinkPricePresent(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, mtokenAddress: string) {
-  const oracle = contracts.ORACLE.getContract(provider)
+  const oracle = contracts.ORACLE.contract.connect(provider)
 
   const price = await oracle.getUnderlyingPrice(mtokenAddress)
   if (price.eq(0)) {
@@ -373,7 +373,7 @@ export async function assertChainlinkFeedIsNotRegistered(provider: ethers.provid
  * @param expectedAddress The expected feed. 
  */
  export async function assertChainlinkFeedIsRegistered(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, targetSymbol: string, expectedAddress: string) {
-  const oracle = contracts.ORACLE.getContract(provider)
+  const oracle = contracts.ORACLE.contract.connect(provider)
 
   const feed = await oracle.getFeed(targetSymbol)
   if (feed === ethers.constants.AddressZero) {
@@ -409,7 +409,7 @@ export async function assertCF(
   marketAddress: string,
   expectedCollateralFactor: number
 ) {
-  const comptroller = contracts.COMPTROLLER.getContract(provider)
+  const comptroller = contracts.COMPTROLLER.contract.connect(provider)
 
   const marketData = await comptroller.markets(marketAddress)
   const collateralFactor = marketData.collateralFactorMantissa
