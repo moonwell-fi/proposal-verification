@@ -22,10 +22,10 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
         callDatas: [],
     }
 
-    const wellToken = contracts.GOV_TOKEN.getContract(provider)
-    const stkWELL = contracts.SAFETY_MODULE.getContract(provider)
-    const comptroller = contracts.COMPTROLLER.getContract(provider)
-    const dexRewarder = contracts.DEX_REWARDER.getContract(provider)
+    const wellToken = contracts.GOV_TOKEN.contract.connect(provider)
+    const stkWELL = contracts.SAFETY_MODULE.contract.connect(provider)
+    const comptroller = contracts.COMPTROLLER.contract.connect(provider)
+    const dexRewarder = contracts.DEX_REWARDER.contract.connect(provider)
 
     // Send 4_182_693 WELL from F-GLMR-LM to ecosystemReserve
     await addProposalToPropData(wellToken, 'transferFrom',
