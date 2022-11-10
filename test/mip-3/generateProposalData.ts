@@ -12,7 +12,7 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
         callDatas: [],
     }
 
-    const comptroller = contracts.COMPTROLLER.getContract(provider)
+    const comptroller = contracts.COMPTROLLER.contract.connect(provider)
 
     // Configure WELL reward speed for GLMR
     const newCFPercent = 62
