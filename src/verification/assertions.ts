@@ -310,7 +310,7 @@ export async function assertMarketIsNotListed(
  * @param targetSymbol The symbol of an asset to query.
  */
 export async function assertChainlinkFeedIsNotRegistered(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, targetSymbol: string) {
-  const oracle = contracts.ORACLE.getContract(provider)
+  const oracle = contracts.ORACLE.contract.connect(provider)
 
   const feed = await oracle.getFeed(targetSymbol)
   if (feed !== ethers.constants.AddressZero) {
@@ -327,7 +327,7 @@ export async function assertChainlinkFeedIsNotRegistered(provider: ethers.provid
  * @param mtokenAddress The market to inspect.
  */
  export async function assertChainlinkPricePresent(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, mtokenAddress: string) {
-  const oracle = contracts.ORACLE.getContract(provider)
+  const oracle = contracts.ORACLE.contract.connect(provider)
 
   const price = await oracle.getUnderlyingPrice(mtokenAddress)
   if (price.eq(0)) {
@@ -349,7 +349,7 @@ export async function assertChainlinkFeedIsNotRegistered(provider: ethers.provid
  * @param expectedAddress The expected feed. 
  */
  export async function assertChainlinkFeedIsRegistered(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, targetSymbol: string, expectedAddress: string) {
-  const oracle = contracts.ORACLE.getContract(provider)
+  const oracle = contracts.ORACLE.contract.connect(provider)
 
   const feed = await oracle.getFeed(targetSymbol)
   if (feed === ethers.constants.AddressZero) {
@@ -385,7 +385,7 @@ export async function assertCF(
   marketAddress: string,
   expectedCollateralFactor: number
 ) {
-  const comptroller = contracts.COMPTROLLER.getContract(provider)
+  const comptroller = contracts.COMPTROLLER.contract.connect(provider)
 
   const marketData = await comptroller.markets(marketAddress)
   const collateralFactor = marketData.collateralFactorMantissa
@@ -546,24 +546,30 @@ const getMarketAddressForUnderlyingSymbol = async (
   }
 
   // Otherwise, we're looking at a market that is not yet committed to moonwell.js. Fetch markets from the unitroller.
-  const unitroller = contracts.COMPTROLLER.getContract(provider)
+  const unitroller = contracts.COMPTROLLER.contract.connect(provider)
   const allMarkets = await unitroller.getAllMarkets()
   const marketContracts = allMarkets.map((market: string) => {
     return getContract('MErc20Delegator', market, provider)
   })
 
   for (const marketContract of marketContracts) {
+    console.log(`searching for ${underlyingSymbol}`)
     // Skip any known markets, since we already know that this is a new market. 
     // Conveniently, this stops us from hitting a snag where we try to call 'underlying' on the native asset or any 
     // XC Asset precompiles.
     if (isKnownMarket(contracts, marketContract.address)) {
+      console.log('skip')
       continue
     }
 
     // Inspect the underlying asset for it's symbol.
     const tokenAddress = await marketContract.underlying()
     const underlyingToken = getContract('MErc20Delegator', tokenAddress, provider)
-    if (await underlyingToken.symbol() === underlyingSymbol) {
+    const symbol = await underlyingToken.symbol()
+    console.log(`found: ${symbol}`)
+    if (symbol === underlyingSymbol) {
+      console.log(`searching for ${underlyingSymbol}`)
+
       return tokenAddress
     }
   }
