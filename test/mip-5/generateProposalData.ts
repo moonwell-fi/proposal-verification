@@ -17,10 +17,10 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
 
     console.log("[+] Constructing Proposal...")
 
-    const mfamToken = contracts.GOV_TOKEN.getContract(provider)
-    const stkWELL = contracts.SAFETY_MODULE.getContract(provider)
-    const comptroller = contracts.COMPTROLLER.getContract(provider)
-    const dexRewarder = contracts.DEX_REWARDER.getContract(provider)
+    const mfamToken = contracts.GOV_TOKEN.contract.connect(provider)
+    const stkWELL = contracts.SAFETY_MODULE.contract.connect(provider)
+    const comptroller = contracts.COMPTROLLER.contract.connect(provider)
+    const dexRewarder = contracts.DEX_REWARDER.contract.connect(provider)
 
     // Send MFAM from F-MOVR-GRANT to ECOSYSTEM_RESERVE
     console.log(`    ✅ Sending ${SENDAMTS['ECOSYSTEM_RESERVE']} MFAM to the ECOSYSTEM_RESERVE`)
@@ -49,7 +49,7 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
     await addProposalToPropData(mfamToken, 'transferFrom',
         [
             fMOVRGrant,
-            contracts.TIMELOCK.address,
+            contracts.TIMELOCK!.address,
             EthersBigNumber.from(SENDAMTS['DEX_REWARDER']).mul(mantissa)
         ],
         proposalData

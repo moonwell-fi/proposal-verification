@@ -23,10 +23,10 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
         callDatas: [],
     }
 
-    const wellToken = contracts.GOV_TOKEN.getContract(provider)
-    const stkWELL = contracts.SAFETY_MODULE.getContract(provider)
-    const unitroller = contracts.COMPTROLLER.getContract(provider)
-    const dexRewarder = contracts.DEX_REWARDER.getContract(provider)
+    const wellToken = contracts.GOV_TOKEN.contract.connect(provider)
+    const stkWELL = contracts.SAFETY_MODULE.contract.connect(provider)
+    const unitroller = contracts.COMPTROLLER.contract.connect(provider)
+    const dexRewarder = contracts.DEX_REWARDER.contract.connect(provider)
 
     // Send WELL from F-GLMR-LM to ecosystemReserve
     console.log(`    📝 Adding transferFrom call from ${F_GLMR_LM} (F_GLMR_LM) to ${ECOSYSTEM_RESERVE} (ECOSYSTEM_RESERVE) for ${EthersBigNumber.from(SENDAMTS["ECOSYSTEM_RESERVE"]).mul(mantissa)} WELL`)
@@ -55,7 +55,7 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
     await addProposalToPropData(wellToken, 'transferFrom',
         [
             F_GLMR_LM,
-            contracts.TIMELOCK.address,
+            contracts.TIMELOCK!.address,
             EthersBigNumber.from(SENDAMTS['DEX_REWARDER']).mul(mantissa)
         ],
         proposalData
