@@ -322,43 +322,28 @@ export async function assertMarketIsNotListed(
 /**
  * Assert a market is listed by querying the comptroller. 
  * 
- * NOTE: This function will fail if given the native asset.
- * TODO(lunar-eng): Fix the above note. 
- * 
  * @param provider An ethers provider.
  * @param contracts A contract bundle.
  * @param targetUnderlyingTokenAddress The address of an ERC-20 token to ensure is not listed. 
- * @param expectedAddress The expected address.
+ * @param expectedAddress The expected address of the market.
  */
  export async function assertMarketIsListed(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, targetUnderlyingTokenAddress: string, expectedAddress: string){
-  const unitroller = contracts.COMPTROLLER.getContract(provider)
+  // Get the underlying token symbol.
+  const underlyingToken = getContract('MErc20Delegator', targetUnderlyingTokenAddress, provider)
+  const underlyingSymbol = await underlyingToken.symbol()
 
-  // Note that we fetch contracts from the unitroller, rather than using the static list in moonwell.js. This avoids the case
-  // where a future version of moonwell.js includes a new market which would break this assertion.
-  const allMarkets = await unitroller.getAllMarkets()
-
-  const marketContracts = allMarkets.map((market: string) => {
-    return getContract('MErc20Delegator', market, provider)
-  })
-
-  for (const marketContract of marketContracts) {
-    // Underlying will fail for the native asset.
-    let tokenAddress
-    try {
-      tokenAddress = await marketContract.underlying()
-    } catch (e: unknown) {
-      continue
-    }
-    if (addressesMatch(tokenAddress, targetUnderlyingTokenAddress)) {
-      if (!addressesMatch(marketContract.address, expectedAddress)) {
-        throw new Error(`Market ${targetUnderlyingTokenAddress} is listed, but not at the right address. Actual: ${marketContract.address} Expected: ${expectedAddress}`)
-      }
-      
-      console.log(`    ✅ Market is listed`)
-      return
-    }
+  // getMarketAddressForUnderlyingSymbol will throw if the market is not listed.
+  let marketAddress
+  try {
+    marketAddress = await getMarketAddressForUnderlyingSymbol(contracts, provider, underlyingSymbol)
+  } catch (e: unknown) {
+    throw new Error(`Market ${targetUnderlyingTokenAddress} is not listed!`)
   }
-  throw new Error(`Market ${targetUnderlyingTokenAddress} is not listed!`)
+
+  if (!addressesMatch(marketAddress, expectedAddress)) {
+    throw new Error(`Market ${targetUnderlyingTokenAddress} is listed, but not at the right address. Actual: ${marketAddress} Expected: ${expectedAddress}`)
+  }
+  console.log(`    ✅ Market is listed`)
 }
 
 /**
