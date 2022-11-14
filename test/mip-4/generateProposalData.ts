@@ -21,7 +21,7 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
         callDatas: [],
     }
 
-    const comptroller = contracts.COMPTROLLER.getContract(provider)
+    const comptroller = contracts.COMPTROLLER.contract.connect(provider)
 
     await addProposalToPropData(comptroller, '_setCollateralFactor',
         [

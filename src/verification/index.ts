@@ -39,7 +39,7 @@ export type TokenHoldingsMap = {
 export async function passGovProposal(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, proposalData: ProposalData, signerAddressOrIndex: number | string = 0){
     console.log("[+] Submitting the following proposal to governance\n", JSON.stringify(proposalData, null ,2), '\n======')
 
-    const governor = contracts.GOVERNOR.getContract(provider.getSigner(signerAddressOrIndex))
+    const governor = contracts.GOVERNOR.contract.connect(provider.getSigner(signerAddressOrIndex))
 
     const proposalResult = await governor.propose(
         proposalData.targets,
@@ -80,7 +80,7 @@ export async function passGovProposal(contracts: ContractBundle, provider: ether
     await queueResult.wait()
     console.log(`[+] Queued for Execution in Hash: ${queueResult.hash}`)
 
-    const timelock = contracts.TIMELOCK.getContract(provider)
+    const timelock = contracts.TIMELOCK.contract.connect(provider)
 
     // Delay for the timelock to complete by waiting for the timelock's delay, and then waiting one more block
     const delay = await timelock.delay()
@@ -90,6 +90,7 @@ export async function passGovProposal(contracts: ContractBundle, provider: ether
     // Execute that shit yo
     const executeResult = await governor.execute(proposalID)
     await executeResult.wait()
+
     console.log(`[+] Executed in hash: ${executeResult.hash}`)
 }
 
@@ -119,8 +120,8 @@ export async function setupDeployerAndEnvForGovernance(contracts: ContractBundle
     )
     console.log(`[+] Funded wellTreasury (${await wellTreasury.getAddress()}) with 1 token`)
 
-    const govToken = contracts.GOV_TOKEN.getContract(provider)
-    const governor = contracts.GOVERNOR.getContract(provider)
+    const govToken = contracts.GOV_TOKEN.contract.connect(provider)
+    const governor = contracts.GOVERNOR.contract.connect(provider)
 
     let amountToTransfer
     if (contracts.GOVERNOR === Contracts.moonriver.GOVERNOR){
@@ -211,6 +212,16 @@ export async function startGanache(contracts: ContractBundle, forkBlock: number,
     console.log(command)
 
     return forkedChainProcess
+}
+
+/**
+ * Convert a whole number representing a percent to an 18 digit mantissa based number.
+ * 
+ * @param percent A whole number representing a percent. Ex. Pass 70 for 70%.
+ * @returns A percent represented as an 18 digit mantissa. Ex. 700_000_000_000_000_000 for 70%.
+ */
+export function percentTo18DigitMantissa(percent: number): ethers.BigNumber {
+    return EthersBigNumber.from(percent).mul(EthersBigNumber.from("10").pow("16"))
 }
 
 export async function ensureWalletIsFunded(provider: ethers.providers.JsonRpcProvider, walletAddress: string){
