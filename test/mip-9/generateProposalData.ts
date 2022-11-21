@@ -1,9 +1,9 @@
 import {ethers} from "ethers";
 import {BigNumber as EthersBigNumber} from "@ethersproject/bignumber/lib/bignumber";
 import {ContractBundle} from "@moonwell-fi/moonwell.js";
-import {addProposalToPropData, REWARD_TYPES} from "../../src";
+import {addMarketAdjustementsToProposal, addProposalToPropData, REWARD_TYPES} from "../../src";
 import BigNumber from "bignumber.js";
-import {ECOSYSTEM_RESERVE, F_MOVR_GRANT, SENDAMTS, SUBMITTER_WALLET} from "./vars";
+import {ECOSYSTEM_RESERVE, ENDING_MARKET_REWARDS_STATE, F_MOVR_GRANT, SENDAMTS, SUBMITTER_WALLET} from "./vars";
 
 export async function generateProposalData(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider){
     const mantissa = EthersBigNumber.from(10).pow(18)
@@ -88,70 +88,11 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
         proposalData
     )
 
-    // Configure reward speeds for MOVR
-    await addProposalToPropData(comptroller, '_setRewardSpeed',
-        [
-            EthersBigNumber.from(REWARD_TYPES.NATIVE), // 0 = MFAM, 1 = MOVR
-            contracts.MARKETS['MOVR'].mTokenAddress,
-            EthersBigNumber.from(new BigNumber('0.000320034722222222').times(1e18).toFixed()),
-            EthersBigNumber.from(new BigNumber('0.000746747685185185').times(1e18).toFixed()),
-        ],
-        proposalData
-    )
-
-    // Configure reward speeds for xcKSM
-    await addProposalToPropData(comptroller, '_setRewardSpeed',
-        [
-            EthersBigNumber.from(REWARD_TYPES.NATIVE), // 0 = MFAM, 1 = MOVR
-            contracts.MARKETS['xcKSM'].mTokenAddress,
-            EthersBigNumber.from(new BigNumber('0.000328240740740741').times(1e18).toFixed()),
-            EthersBigNumber.from(new BigNumber('0.000328240740740741').times(1e18).toFixed()),
-        ],
-        proposalData
-    )
-
-    // Configure reward speeds for ETH.multi
-    await addProposalToPropData(comptroller, '_setRewardSpeed',
-        [
-            EthersBigNumber.from(REWARD_TYPES.NATIVE), // 0 = MFAM, 1 = MOVR
-            contracts.MARKETS['ETH.multi'].mTokenAddress,
-            EthersBigNumber.from(new BigNumber('0.000344652777777778').times(1e18).toFixed()),
-            EthersBigNumber.from(new BigNumber('0.000804189814814815').times(1e18).toFixed()),
-        ],
-        proposalData
-    )
-
-    // Configure reward speeds for USDC.multi
-    await addProposalToPropData(comptroller, '_setRewardSpeed',
-        [
-            EthersBigNumber.from(REWARD_TYPES.NATIVE), // 0 = MFAM, 1 = MOVR
-            contracts.MARKETS['USDC.multi'].mTokenAddress,
-            EthersBigNumber.from(new BigNumber('0.000861631944444445').times(1e18).toFixed()),
-            EthersBigNumber.from(new BigNumber('0.002010474537037040').times(1e18).toFixed()),
-        ],
-        proposalData
-    )
-
-    // Configure reward speeds for USDT.multi
-    await addProposalToPropData(comptroller, '_setRewardSpeed',
-        [
-            EthersBigNumber.from(REWARD_TYPES.NATIVE), // 0 = MFAM, 1 = MOVR
-            contracts.MARKETS['USDT.multi'].mTokenAddress,
-            EthersBigNumber.from(new BigNumber('0.000246180555555556').times(1e18).toFixed()),
-            EthersBigNumber.from(new BigNumber('0.000574421296296296').times(1e18).toFixed()),
-        ],
-        proposalData
-    )
-
-    // Configure reward speeds for FRAX
-    await addProposalToPropData(comptroller, '_setRewardSpeed',
-        [
-            EthersBigNumber.from(REWARD_TYPES.NATIVE), // 0 = MFAM, 1 = MOVR
-            contracts.MARKETS['FRAX'].mTokenAddress,
-            EthersBigNumber.from(new BigNumber('0.000492361111111111').times(1e18).toFixed()),
-            EthersBigNumber.from(new BigNumber('0.001148842592592590').times(1e18).toFixed()),
-        ],
-        proposalData
+    await addMarketAdjustementsToProposal(
+        contracts,
+        comptroller,
+        proposalData,
+        ENDING_MARKET_REWARDS_STATE
     )
 
     await addProposalToPropData(mfamToken, 'transferFrom',
