@@ -45,7 +45,7 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
     )
 
     // Pull in MFAM to the timelock from F-MOVR-GRANT
-    console.log(`    ✅ Sending ${SENDAMTS['DEX_REWARDER']} MFAM to the DEX_REWARDER`)
+    console.log(`    ✅ Sending ${SENDAMTS['DEX_REWARDER']} MFAM to the TIMELOCK`)
     await addProposalToPropData(mfamToken, 'transferFrom',
         [
             F_MOVR_GRANT,
