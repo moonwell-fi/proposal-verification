@@ -1,17 +1,18 @@
 import { deployAndWireMarket } from '@moonwell-fi/market-deployer'
+import MarketConfiguration from '@moonwell-fi/market-deployer/dist/types/market-configuration';
 import { Environment } from '@moonwell-fi/moonwell.js';
 
 export const generateProposalData = async (
   deployer: any,
-  tokenAddress: string,
-  chainlinkFeedAddress: string,
-  tokenSymbol: string,
-  tokenDecimals: number,
-  mTokenName: string,
-  mTokenSymbol: string,
-  reserveFactoryPercent: number,
-  protocolSeizeSharePercent: number,
-  collateralFactorPercent: number,
+  tokenAddresses: Array<string>,
+  chainlinkFeedAddresses: Array<string>,
+  tokenSymbols: Array<string>,
+  tokenDecimals: Array<number>,
+  mTokenNames: Array<string>,
+  mTokenSymbols: Array<string>,
+  reserveFactoryPercents: Array<number>,
+  protocolSeizeSharePercents: Array<number>,
+  collateralFactorPercents: Array<number>,
 ) => {
   console.log("[+] Deploying Market ")
 
@@ -19,26 +20,34 @@ export const generateProposalData = async (
     networkName: 'moonbeam',
     environment: Environment.MOONBEAM,
     deployer,
-    requiredConfirmations: 1
+    requiredConfirmations: 1,
+    numMarkets: tokenAddresses.length
   }
-  const marketConfiguration = {
-    tokenAddress,
-    chainlinkFeedAddress,
-    tokenSymbol,
-    tokenDecimals,
-    mTokenName,
-    mTokenSymbol,
-    reserveFactor: reserveFactoryPercent,
-    protocolSeizeShare: protocolSeizeSharePercent,
-    collateralFactor: collateralFactorPercent
+  const marketConfigurations: Array<MarketConfiguration> = []
+  for (let i = 0; i < tokenAddresses.length; i++) {
+    marketConfigurations.push(
+      {
+        tokenAddress: tokenAddresses[i],
+        chainlinkFeedAddress: chainlinkFeedAddresses[i],
+        tokenSymbol: tokenSymbols[i],
+        tokenDecimals: tokenDecimals[i],
+        mTokenName: mTokenNames[i],
+        mTokenSymbol: mTokenSymbols[i],
+        reserveFactor: reserveFactoryPercents[i],
+        protocolSeizeShare: protocolSeizeSharePercents[i],
+        collateralFactor: collateralFactorPercents[i]
+      }
+    )
   }
 
-  const { govProposal, mTokenDeployResult } = await deployAndWireMarket(
-    marketConfiguration,
+  const { proposal, mTokenDeployResults } = await deployAndWireMarket(
+    marketConfigurations,
     deploymentConfiguration
   )
 
-  console.log(`    ✅ Market deployed at ${mTokenDeployResult.contractAddress}.`)
+  for (let i = 0; i < mTokenDeployResults.length; i++) {
+  console.log(`    ✅ Market deployed at ${mTokenDeployResults[i].contractAddress}.`)
+  }
 
-  return { govProposal, mTokenDeployResult}
+  return { proposal, mTokenDeployResults}
 }
