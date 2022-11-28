@@ -1,4 +1,4 @@
-import {ethers} from "ethers";
+import {ethers, BigNumber as EthersBigNumber} from "ethers";
 import BigNumber from "bignumber.js";
 import {ContractBundle, getContract, getDeployArtifact, getNativeTokenSymbol, Market} from "@moonwell-fi/moonwell.js";
 import {govTokenTicker, nativeTicker, percentTo18DigitMantissa} from "./index";
@@ -393,8 +393,33 @@ export async function assertCF(
   if (!collateralFactor.eq(expected)) {
     throw new Error(`Unexpected Collateral Factor value in market ${marketAddress}. Expected: ${expected}, Actual: ${collateralFactor.toString()}`)
   }
-  console.log(`    ✅ Collateral Factor share set correctly.`)
+  console.log(`    ✅ Collateral Factor set correctly.`)
 }
+
+/**
+ * Assert the borrow cap of a market is the expected value.
+ * 
+ * @param provider An ethers provider.
+ * @param marketAddress The address of the market.
+ * @param borrowCap The expected borrow cap as an integer (ex. 600 = 600 BTC)
+ * @param tokenDecimals The number of decimals in the underlying token.
+ */
+ export async function assertBorrowCap(
+  provider: ethers.providers.JsonRpcProvider, 
+  contracts: ContractBundle,
+  marketAddress: string,
+  borrowCap: number,
+  tokenDecimals: number
+) {
+  const comptroller = contracts.COMPTROLLER.contract.connect(provider)
+  const actual = await comptroller.borrowCaps(marketAddress)
+  const expected = EthersBigNumber.from(borrowCap).mul(EthersBigNumber.from("10").pow(tokenDecimals))
+  if (!actual.eq(expected)) {
+    throw new Error(`Unexpected borrow cap in market ${marketAddress}. Expected: ${expected.toString()}, Actual: ${actual.toString()}`)
+  }
+  console.log(`    ✅ Borrow Cap set correctly.`)
+}
+
 
 /**
  * Assert the reserve factor of a market is the expected value.

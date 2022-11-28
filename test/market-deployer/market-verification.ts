@@ -1,4 +1,5 @@
 import {Contracts} from '@moonwell-fi/moonwell.js'
+import {UNLIMITED_BORROW_CAP} from '@moonwell-fi/market-deployer'
 import {passGovProposal, setupDeployerAndEnvForGovernance, sleep, startGanache} from "../../src";
 import {ethers} from "ethers";
 
@@ -10,7 +11,7 @@ const wellTreasuryAddress = "0x519ee031E182D3E941549E7909C9319cFf4be69a";
 
 const FORK_BLOCK = 1757073
 
-test("market-deployer with a single market", async () => {
+test("market-deployer with a single market - no borrow cap", async () => {
   const contracts = Contracts.moonbeam
 
   const fGLMRLM = '0x6972f25AB3FC425EaF719721f0EBD1Cdb58eE451'
@@ -36,6 +37,7 @@ test("market-deployer with a single market", async () => {
         const reserveFactorPercents = [60]
         const protocolSeizeSharePercents = [10]
         const collateralFactorPercents = [40]
+        const borrowCaps = [UNLIMITED_BORROW_CAP]
 
         const provider = new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545')
 
@@ -58,6 +60,7 @@ test("market-deployer with a single market", async () => {
           reserveFactorPercents,
           protocolSeizeSharePercents,
           collateralFactorPercents,
+          borrowCaps
         )
 
         // Pass the proposal
@@ -76,6 +79,8 @@ test("market-deployer with a single market", async () => {
           reserveFactorPercents,
           protocolSeizeSharePercents,
           collateralFactorPercents,
+          borrowCaps,
+          tokenDecimals,
           mTokenDeployResults.map((deployResult) => { return deployResult.contractAddress }),
         )
   } finally {
@@ -85,6 +90,87 @@ test("market-deployer with a single market", async () => {
       console.log("Ganache chain stopped.")
   }
 });
+
+test("market-deployer with a single market - with borrow cap", async () => {
+  const contracts = Contracts.moonbeam
+
+  const fGLMRLM = '0x6972f25AB3FC425EaF719721f0EBD1Cdb58eE451'
+  const cGLMRAPPDEV = '0x519ee031E182D3E941549E7909C9319cFf4be69a'
+
+  const forkedChainProcess = await startGanache(
+      contracts,
+      FORK_BLOCK,
+      'https://rpc.api.moonbeam.network',
+      [fGLMRLM, cGLMRAPPDEV]
+  )
+
+  console.log("Waiting 5 seconds for chain to bootstrap...")
+  await sleep(5)
+
+  try {
+        const tokensToList = ["0x27292cf0016e5df1d8b37306b2a98588acbd6fca"] // axlATOM
+        const chainlinkAddresses = ["0x4F152D143c97B5e8d2293bc5B2380600f274a5dd"] // ATOM
+        const tokenSymbols = ["axlATOM"]
+        const tokenDecimals = [6]
+        const mTokenNames = ["Moonwell axlATOM"]
+        const mTokenSymbols = ["maxlATOM"]
+        const reserveFactorPercents = [60]
+        const protocolSeizeSharePercents = [10]
+        const collateralFactorPercents = [40]
+        const borrowCaps = [300]
+
+        const provider = new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545')
+
+        // Go transfer WELL to the deployer key, delegate those well to itself, and assert it has voting power
+        await setupDeployerAndEnvForGovernance(contracts, provider, wellTreasuryAddress, FORK_BLOCK)
+
+        // Assert that a market is not listed for the token and a chainlink feed is not registered.
+        await assertCurrentExpectedState(provider, contracts, tokensToList, chainlinkAddresses)
+
+        // Generate proposal data
+        const deployer = await provider.getSigner(0)
+        const {proposal, mTokenDeployResults} = await generateProposalData(
+          deployer,
+          tokensToList,
+          chainlinkAddresses,
+          tokenSymbols,
+          tokenDecimals,
+          mTokenNames,
+          mTokenSymbols,
+          reserveFactorPercents,
+          protocolSeizeSharePercents,
+          collateralFactorPercents,
+          borrowCaps
+        )
+
+        // Pass the proposal
+        await passGovProposal(contracts, provider, proposal)
+
+        // Assert the market is correctly admin'ed, with the right economic parameters and has the right storage set.
+        // Assert that a chainlink feed has been registered.
+        await assertExpectedEndState(
+          provider,
+          contracts, 
+          tokensToList,
+          chainlinkAddresses,
+          tokenSymbols,
+          mTokenNames,
+          mTokenSymbols,
+          reserveFactorPercents,
+          protocolSeizeSharePercents,
+          collateralFactorPercents,
+          borrowCaps,
+          tokenDecimals,
+          mTokenDeployResults.map((deployResult) => { return deployResult.contractAddress }),
+        )
+  } finally {
+      // Kill our child chain.
+      console.log("Shutting down Ganache chain. PID", forkedChainProcess.pid!)
+      process.kill(-forkedChainProcess.pid!)
+      console.log("Ganache chain stopped.")
+  }
+});
+
 
 test("market-deployer with 3 markets", async () => {
   const contracts = Contracts.moonbeam
@@ -124,6 +210,7 @@ test("market-deployer with 3 markets", async () => {
         const reserveFactorPercents = [60, 65, 70]
         const protocolSeizeSharePercents = [10, 15, 20]
         const collateralFactorPercents = [40, 45, 50]
+        const borrowCaps = [0, 100, 500]
 
         const provider = new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545')
 
@@ -146,6 +233,7 @@ test("market-deployer with 3 markets", async () => {
           reserveFactorPercents,
           protocolSeizeSharePercents,
           collateralFactorPercents,
+          borrowCaps
         )
 
         // Pass the proposal
@@ -164,6 +252,8 @@ test("market-deployer with 3 markets", async () => {
           reserveFactorPercents,
           protocolSeizeSharePercents,
           collateralFactorPercents,
+          borrowCaps,
+          tokenDecimals,
           mTokenDeployResults.map((deployResult) => { return deployResult.contractAddress }),
         )
   } finally {
