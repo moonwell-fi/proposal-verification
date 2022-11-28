@@ -46,7 +46,7 @@ export async function passGovProposal(contracts: ContractBundle, provider: ether
         proposalData.values,
         proposalData.signatures,
         proposalData.callDatas,
-        'Automated gov proposals to restart the markets'
+        'Gov proposal unit test'
     )
     await proposalResult.wait()
     console.log(`[+] Proposed in hash: ${proposalResult.hash}`)
@@ -103,7 +103,7 @@ export async function addProposalToPropData(contract: Contract, fn: string, args
     proposalData.callDatas.push('0x' + tx.data!.slice(10)) // chop off the method selector from the args
 }
 
-export async function setupDeployerAndEnvForGovernance(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, wellTreasuryAddress: string, forkBlock: number){
+export async function setupDeployerAndEnvForGovernance(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, wellTreasuryAddress: string, forkBlock: number, quorumBuffer = 1){
     const mantissa = EthersBigNumber.from(10).pow(18)
 
     // Mine a block to set the initial block timestamp
@@ -118,17 +118,27 @@ export async function setupDeployerAndEnvForGovernance(contracts: ContractBundle
     await provider.send('evm_setAccountBalance',
         [wellTreasuryAddress, 1e18]
     )
-    console.log(`[+] Funded wellTreasury (${await wellTreasury.getAddress()}) with 1 token`)
+    console.log(`[+] Funded wellTreasury (${await wellTreasury.getAddress()}) with 1 native token`)
 
     const govToken = contracts.GOV_TOKEN.contract.connect(provider)
     const governor = contracts.GOVERNOR.contract.connect(provider)
 
     let amountToTransfer
     if (contracts.GOVERNOR === Contracts.moonriver.GOVERNOR){
-        // Floating quorum, go get the latest
-        amountToTransfer = (await governor.getQuorum()).add(EthersBigNumber.from(1).mul(mantissa))
+        // Floating quorum
+        amountToTransfer = (await governor.getQuorum())
+                                .add(
+                                    EthersBigNumber
+                                        .from(quorumBuffer)
+                                        .mul(mantissa)
+                                )
     } else {
-        amountToTransfer = (await governor.quorumVotes()).add(EthersBigNumber.from(1).mul(mantissa))
+        amountToTransfer = (await governor.quorumVotes())
+                                .add(
+                                    EthersBigNumber
+                                        .from(quorumBuffer)
+                                        .mul(mantissa)
+                                )
     }
 
     const currentBalance = await govToken.balanceOf(await deployer.getAddress())
@@ -377,6 +387,9 @@ export async function assertEndingExpectedGovTokenHoldings(contracts : ContractB
                 amount + sendMap[holderName]
             )
         } else {
+            if (!sendMap[holderName]){
+                throw new Error(`Holder ${holderName} not found in sendmap! If this is the main treasury make sure you're using a negative number here to captures outflows for validation.`)
+            }
             await assertRoundedWellBalance(contracts, provider,
                 nameMap[holderName],
                 holderName,
