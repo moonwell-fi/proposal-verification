@@ -11,7 +11,8 @@ import {
   assertMTokenProxySetCorrectly,
   assertMTokenProxyByteCodeMatches,
   assertMarketNativeTokenRewardSpeed,
-  assertMarketGovTokenRewardSpeed
+  assertMarketGovTokenRewardSpeed,
+  assertBorrowCap
 } from "../../src/verification/assertions";
 import {ContractBundle, getContract} from "@moonwell-fi/moonwell.js";
 import BigNumber from "bignumber.js";
@@ -28,6 +29,8 @@ async function assertExpectedStateEndStateForToken(
   reserveFactoryPercent: number,
   protocolSeizeSharePercent: number,
   collateralFactorPercent: number,
+  borrowCap: number,
+  tokenDecimals: number,
   expectedMarketAddress: string
 ) {
   console.log(`[+] Asserting protocol is in an expected for ${tokenSymbol} state AFTER gov proposal passed`)
@@ -51,6 +54,7 @@ async function assertExpectedStateEndStateForToken(
   // Unitroller has the market listed with the correct collateral factor
   await assertMarketIsListed(provider, contracts, tokenAddress, expectedMarketAddress)
   await assertCF(provider, contracts, expectedMarketAddress, collateralFactorPercent)
+  await assertBorrowCap(provider, contracts, expectedMarketAddress, borrowCap, tokenDecimals)
 
   // Assert a chain link feed is registered
   await assertChainlinkFeedIsRegistered(provider, contracts, tokenSymbol, chainlinkFeedAddress)
@@ -79,6 +83,8 @@ export async function assertExpectedEndState(
   reserveFactoryPercents: Array<number>,
   protocolSeizeSharePercents: Array<number>,
   collateralFactorPercents: Array<number>,
+  borrowCaps: Array<number>,
+  tokenDecimals: Array<number>,
   expectedMarketAddresses: Array<string>
 ) {
   for (let i = 0; i < tokenAddresses.length; i++) {
@@ -93,7 +99,9 @@ export async function assertExpectedEndState(
       reserveFactoryPercents[i],
       protocolSeizeSharePercents[i],
       collateralFactorPercents[i],
-      expectedMarketAddresses[i]
+      borrowCaps[i],
+      tokenDecimals[i],
+      expectedMarketAddresses[i],
     )
   }
 }
