@@ -13,6 +13,7 @@ export const generateProposalData = async (
   reserveFactoryPercents: Array<number>,
   protocolSeizeSharePercents: Array<number>,
   collateralFactorPercents: Array<number>,
+  borrowCaps: Array<number>
 ) => {
   console.log("[+] Deploying Market ")
 
@@ -35,7 +36,8 @@ export const generateProposalData = async (
         mTokenSymbol: mTokenSymbols[i],
         reserveFactor: reserveFactoryPercents[i],
         protocolSeizeShare: protocolSeizeSharePercents[i],
-        collateralFactor: collateralFactorPercents[i]
+        collateralFactor: collateralFactorPercents[i],
+        borrowCap: borrowCaps[i]
       }
     )
   }
