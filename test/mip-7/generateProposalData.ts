@@ -5,4 +5,21 @@ import { Environment } from '@moonwell-fi/moonwell.js';
 export const generateProposalData = async (
 ) => {
   // TODO: Return generated proposal data and token addresses.
+  const proposal = {
+    targets: [],
+    values: [],
+    signatures: [],
+    callDatas: []
+  }
+  const ethDeployResult = { contractAddress: "" }
+  const btcDeployResult = { contractAddress: "" }
+  const usdcDeployResult = { contractAddress: "" }
+  
+  const mTokenDeployResults = [
+    ethDeployResult,
+    btcDeployResult,
+    usdcDeployResult,
+  ]
+
+  return {proposal, mTokenDeployResults}
 }
