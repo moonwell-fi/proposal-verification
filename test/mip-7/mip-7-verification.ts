@@ -40,7 +40,7 @@ test("mip 7", async () => {
         ]
 
         const tokenSymbols = [
-          "ETH", // ETH
+          "WETH", // ETH
           "WBTC", // WBTC
           "USDC", // USDC
         ]
@@ -65,8 +65,16 @@ test("mip 7", async () => {
           25, // BTC
           15, // USDC
         ]
-        const protocolSeizeSharePercents = [3, 3, 3]
-        const collateralFactorPercents = [10, 10, 10]
+        const protocolSeizeSharePercents = [
+          3, 
+          3, 
+          3
+        ]
+        const collateralFactorPercents = [
+          10, 
+          10, 
+          10
+        ]
         const borrowCaps = [
           210, // ETH
           15, // BTC
