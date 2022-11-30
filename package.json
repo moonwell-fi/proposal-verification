@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@moonwell-fi/market-deployer": "^0.3.1",
-    "@moonwell-fi/moonwell.js": "^0.2.3",
+    "@moonwell-fi/moonwell.js": "^0.2.4",
     "bignumber.js": "^9.1.0",
     "ethers": "^5.7.1"
   }

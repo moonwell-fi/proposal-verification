@@ -36,8 +36,8 @@ export type TokenHoldingsMap = {
 }
 
 
-export async function passGovProposal(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, proposalData: ProposalData, signerAddressOrIndex: number | string = 0){
-    console.log("[+] Submitting the following proposal to governance\n", JSON.stringify(proposalData, null ,2), '\n======')
+export async function passGovProposal(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, proposalData: ProposalData, signerAddressOrIndex: number | string = 0, logProposal = true){
+    logProposal && console.log("[+] Submitting the following proposal to governance\n", JSON.stringify(proposalData, null ,2), '\n======')
 
     const governor = contracts.GOVERNOR.contract.connect(provider.getSigner(signerAddressOrIndex))
 
