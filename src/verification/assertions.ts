@@ -111,6 +111,7 @@ export async function assertMarketBorrowIsPaused(provider: ethers.providers.Json
     console.log(`    ✅ ${market.name} market borrow is paused`)
   }
 }
+
 export async function assertMarketBorrowIsNOTPaused(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market){
   const comptroller = contracts.COMPTROLLER.contract.connect(provider)
 

@@ -14,5 +14,6 @@ bash:
 	docker run --rm -it \
 		-v $$(pwd):$$(pwd) \
 		--workdir $$(pwd) \
+		-p 8545:8545 \
 		$(TAG) \
 		bash
