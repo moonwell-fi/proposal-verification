@@ -207,6 +207,7 @@ export async function startGanache(contracts: ContractBundle, forkBlock: number,
       ${unlockAddresses && unlockAddresses.map(i => '--wallet.unlockedAccounts ' + i).join(' ')} 
       --fork.url "${rpcURL}"
       --fork.blockNumber ${forkBlock}
+      --server.host=0.0.0.0
       --wallet.defaultBalance ${ ethers.utils.parseEther("2.0") }
     `.replace(/\n/g, ' ')
      .replace(/  +/g, ' ');
