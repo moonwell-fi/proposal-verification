@@ -590,49 +590,6 @@ function addressesMatch(a: string, b: string) {
 }
 
 /**
- * Given an underlying token symbol (GLMR), return the address of the market.
- * 
- * @param provider An ethers provider.
- * @param contracts A contract bundle.
-//  * @param underlyingSymbol The symbol to search for.
- */
-const getMarketAddressForUnderlyingSymbol = async (
-  contracts: ContractBundle, 
-  provider: ethers.providers.JsonRpcProvider, 
-  underlyingSymbol: string
-): Promise<string> => {
-  // If the symbol is for a known market, return early. 
-  if (contracts.MARKETS[underlyingSymbol] !== undefined) {
-    return contracts.MARKETS[underlyingSymbol].mTokenAddress
-  }
-
-  // Otherwise, we're looking at a market that is not yet committed to moonwell.js. Fetch markets from the unitroller.
-  const unitroller = contracts.COMPTROLLER.contract.connect(provider)
-  const allMarkets = await unitroller.getAllMarkets()
-  const marketContracts = allMarkets.map((market: string) => {
-    return getContract('MErc20Delegator', market, provider)
-  })
-
-  for (const marketContract of marketContracts) {
-    // Skip any known markets, since we already know that this is a new market. 
-    // Conveniently, this stops us from hitting a snag where we try to call 'underlying' on the native asset or any 
-    // XC Asset precompiles.
-    if (isKnownMarket(contracts, marketContract.address)) {
-      continue
-    }
-
-    // Inspect the underlying asset for it's symbol.
-    const tokenAddress = await marketContract.underlying()
-    const underlyingToken = getContract('MErc20Delegator', tokenAddress, provider)
-    const symbol = await underlyingToken.symbol()
-    if (symbol === underlyingSymbol) {
-      return marketContract.address
-    }
-  }
-  throw new Error(`Could not locate underlying token with symbol ${underlyingSymbol}`)
-}
-  
-/**
  * Check if the given market address exists in the known markets loaded from Moonwell.js
  * 
  * @param contracts A contract bundle from Moonwell.js
