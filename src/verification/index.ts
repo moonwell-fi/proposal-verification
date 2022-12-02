@@ -13,6 +13,11 @@ export enum REWARD_TYPES {
     NATIVE
 }
 
+export type MarketLocater = {
+    ticker: string,
+    marketAddress: string
+}
+
 export type ProposalData = {
     targets: string[]
     values: number[]
@@ -306,18 +311,30 @@ export async function replaceXCAssetWithDummyERC20(provider: ethers.providers.Js
     // ])
 }
 
-export async function assertMarketRewardState(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, marketRewardMap: MarketRewardMap){
+export async function assertMarketRewardState(
+    contracts: ContractBundle,
+    provider: ethers.providers.JsonRpcProvider,
+    marketRewardMap: MarketRewardMap
+) {
     for (const [assetTicker, data] of Object.entries(marketRewardMap)){
+        const mTokenAddress = contracts.MARKETS[assetTicker].mTokenAddress
+
         if (data[REWARD_TYPES.GOVTOKEN]){
-            await assertMarketGovTokenRewardSpeed(contracts, provider,
+            await assertMarketGovTokenRewardSpeed(
+                contracts,
+                provider,
                 assetTicker,
+                mTokenAddress,
                 data[REWARD_TYPES.GOVTOKEN].expectedSupply,
                 data[REWARD_TYPES.GOVTOKEN].expectedBorrow,
             )
         }
         if (data[REWARD_TYPES.NATIVE]){
-            await assertMarketNativeTokenRewardSpeed(contracts, provider,
+            await assertMarketNativeTokenRewardSpeed(
+                contracts,
+                provider,
                 assetTicker,
+                mTokenAddress,
                 data[REWARD_TYPES.NATIVE].expectedSupply,
                 data[REWARD_TYPES.NATIVE].expectedBorrow,
             )
