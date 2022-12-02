@@ -55,10 +55,15 @@ export async function assertSTKWellEmissionsPerSecond(contracts: ContractBundle,
   // poolRewardsPerSec
 }
 
-export async function assertMarketGovTokenRewardSpeed(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, assetName: string, expectedSupplySpeed: BigNumber, expectedBorrowSpeed: BigNumber){
+export async function assertMarketGovTokenRewardSpeed(
+  contracts: ContractBundle,
+  provider: ethers.providers.JsonRpcProvider,
+  assetName: string,
+  mTokenAddress: string,
+  expectedSupplySpeed: BigNumber,
+  expectedBorrowSpeed: BigNumber
+) {
   const unitroller = contracts.COMPTROLLER.contract.connect(provider)
-
-  const mTokenAddress = await getMarketAddressForUnderlyingSymbol(contracts, provider, assetName)
 
   // 0 = WELL, 1 = GLMR
   const supplyRewardSpeed = new BigNumber((await unitroller.supplyRewardSpeeds(0, mTokenAddress)).toString())
@@ -78,9 +83,15 @@ export async function assertMarketGovTokenRewardSpeed(contracts: ContractBundle,
   }
 }
 
-export async function assertMarketNativeTokenRewardSpeed(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, assetName: string, expectedSupplySpeed: BigNumber, expectedBorrowSpeed: BigNumber){
+export async function assertMarketNativeTokenRewardSpeed(
+  contracts: ContractBundle,
+  provider: ethers.providers.JsonRpcProvider,
+  assetName: string,
+  mTokenAddress: string,
+  expectedSupplySpeed: BigNumber,
+  expectedBorrowSpeed: BigNumber
+) {
   const comptroller = contracts.COMPTROLLER.contract.connect(provider)
-  const mTokenAddress = await getMarketAddressForUnderlyingSymbol(contracts, provider, assetName)
 
   // 0 = WELL/MFAM, 1 = GLMR/MOVR
   const supplyRewardSpeed = new BigNumber((await comptroller.supplyRewardSpeeds(1, mTokenAddress)).toString())
@@ -261,16 +272,25 @@ export async function assertMarketIsNotListed(
   targetUnderlyingTokenAddress: string
 ){
   // Get the underlying token symbol.
-  const underlyingToken = getContract('MErc20Delegator', targetUnderlyingTokenAddress, provider)
-  const underlyingSymbol = await underlyingToken.symbol()
+  // const underlyingToken = getContract('MErc20Delegator', targetUnderlyingTokenAddress, provider)
+  // const underlyingSymbol = await underlyingToken.symbol()
 
-  // getMarketAddressForUnderlyingSymbol will throw if the market is not listed.
-  try {
-    await getMarketAddressForUnderlyingSymbol(contracts, provider, underlyingSymbol)
-    throw new Error(`Market ${targetUnderlyingTokenAddress} is listed!`)
-  } catch (e: unknown) {
-    console.log(`    ✅ Market is not listed`)
+  const allMarkets = await contracts.COMPTROLLER.contract.connect(provider).getAllMarkets()
+  for (const mTokenAddress of allMarkets) {
+    const underlyingToken = getContract('MErc20Delegator', targetUnderlyingTokenAddress, provider)
+
+    // Native asset will throw
+    try {
+      const market = getContract('MErc20Delegator', targetUnderlyingTokenAddress, provider)
+      const underlyingAddress = await market.underlying()
+      if (addressesMatch(underlyingAddress, targetUnderlyingTokenAddress)) {
+        throw new Error(`Token ${targetUnderlyingTokenAddress} IS listed.`)
+      }
+    } catch (e: unknown) { 
+      // silently swallow failure - this method isn't used for the native asset
+    }
   }
+  console.log(`    ✅ Asset is not listed`)
 }
 
 /**
@@ -281,23 +301,38 @@ export async function assertMarketIsNotListed(
  * @param targetUnderlyingTokenAddress The address of an ERC-20 token to ensure is not listed. 
  * @param expectedAddress The expected address of the market.
  */
- export async function assertMarketIsListed(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, targetUnderlyingTokenAddress: string, expectedAddress: string){
-  // Get the underlying token symbol.
-  const underlyingToken = getContract('MErc20Delegator', targetUnderlyingTokenAddress, provider)
-  const underlyingSymbol = await underlyingToken.symbol()
+export async function assertMarketIsListed(
+  provider: ethers.providers.JsonRpcProvider,
+  contracts: ContractBundle,
+  targetUnderlyingTokenAddress:
+    string, expectedAddress: string
+) {
+  const market = await contracts.COMPTROLLER.contract.connect(provider).markets(expectedAddress)
 
-  // getMarketAddressForUnderlyingSymbol will throw if the market is not listed.
-  let marketAddress
-  try {
-    marketAddress = await getMarketAddressForUnderlyingSymbol(contracts, provider, underlyingSymbol)
-  } catch (e: unknown) {
-    throw new Error(`Market ${targetUnderlyingTokenAddress} is not listed!`)
+  if (market.isListed) {
+    console.log(`    ✅ Market is listed`)
+    return
   }
 
-  if (!addressesMatch(marketAddress, expectedAddress)) {
-    throw new Error(`Market ${targetUnderlyingTokenAddress} is listed, but not at the right address. Actual: ${marketAddress} Expected: ${expectedAddress}`)
-  }
-  console.log(`    ✅ Market is listed`)
+  throw new Error(`Market (token: ${targetUnderlyingTokenAddress}, mtoken: ${expectedAddress}) is not listed when it was expected to be!`)
+
+
+  // // Get the underlying token symbol.
+  // const underlyingToken = getContract('MErc20Delegator', targetUnderlyingTokenAddress, provider)
+  // const underlyingSymbol = await underlyingToken.symbol()
+
+  // // getMarketAddressForUnderlyingSymbol will throw if the market is not listed.
+  // let marketAddress
+  // try {
+  //   marketAddress = await getMarketAddressForUnderlyingSymbol(contracts, provider, underlyingSymbol)
+  // } catch (e: unknown) {
+  //   throw new Error(`Market ${targetUnderlyingTokenAddress} is not listed!`)
+  // }
+
+  // if (!addressesMatch(marketAddress, expectedAddress)) {
+  //   throw new Error(`Market ${targetUnderlyingTokenAddress} is listed, but not at the right address. Actual: ${marketAddress} Expected: ${expectedAddress}`)
+  // }
+  // console.log(`    ✅ Market is listed`)
 }
 
 /**
@@ -559,7 +594,7 @@ function addressesMatch(a: string, b: string) {
  * 
  * @param provider An ethers provider.
  * @param contracts A contract bundle.
- * @param underlyingSymbol The symbol to search for.
+//  * @param underlyingSymbol The symbol to search for.
  */
 const getMarketAddressForUnderlyingSymbol = async (
   contracts: ContractBundle, 
