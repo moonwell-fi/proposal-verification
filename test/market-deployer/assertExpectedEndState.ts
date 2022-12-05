@@ -69,7 +69,6 @@ async function assertExpectedStateEndStateForToken(
   await assertMarketNativeTokenRewardSpeed(
     contracts,
     provider,
-    tokenSymbol,
     expectedMarketAddress,
     expectedSupplySpeed,
     expectedBorrowSpeed
@@ -77,7 +76,6 @@ async function assertExpectedStateEndStateForToken(
   await assertMarketGovTokenRewardSpeed(
     contracts,
     provider,
-    tokenSymbol,
     expectedMarketAddress,
     expectedSupplySpeed,
     expectedBorrowSpeed

@@ -58,12 +58,13 @@ export async function assertSTKWellEmissionsPerSecond(contracts: ContractBundle,
 export async function assertMarketGovTokenRewardSpeed(
   contracts: ContractBundle,
   provider: ethers.providers.JsonRpcProvider,
-  assetName: string,
   mTokenAddress: string,
   expectedSupplySpeed: BigNumber,
   expectedBorrowSpeed: BigNumber
 ) {
   const unitroller = contracts.COMPTROLLER.contract.connect(provider)
+  const market = getContract('MErc20Delegator', mTokenAddress, provider)
+  const assetName = await market.symbol()
 
   // 0 = WELL, 1 = GLMR
   const supplyRewardSpeed = new BigNumber((await unitroller.supplyRewardSpeeds(0, mTokenAddress)).toString())
@@ -86,12 +87,13 @@ export async function assertMarketGovTokenRewardSpeed(
 export async function assertMarketNativeTokenRewardSpeed(
   contracts: ContractBundle,
   provider: ethers.providers.JsonRpcProvider,
-  assetName: string,
   mTokenAddress: string,
   expectedSupplySpeed: BigNumber,
   expectedBorrowSpeed: BigNumber
 ) {
   const comptroller = contracts.COMPTROLLER.contract.connect(provider)
+  const market = getContract('MErc20Delegator', mTokenAddress, provider)
+  const assetName = await market.symbol()
 
   // 0 = WELL/MFAM, 1 = GLMR/MOVR
   const supplyRewardSpeed = new BigNumber((await comptroller.supplyRewardSpeeds(1, mTokenAddress)).toString())
@@ -270,16 +272,8 @@ export async function assertMarketIsNotListed(
   provider: ethers.providers.JsonRpcProvider, 
   contracts: ContractBundle, 
   targetUnderlyingTokenAddress: string
-){
-  // Get the underlying token symbol.
-  // const underlyingToken = getContract('MErc20Delegator', targetUnderlyingTokenAddress, provider)
-  // const underlyingSymbol = await underlyingToken.symbol()
+) {
 
-  const allMarkets = await contracts.COMPTROLLER.contract.connect(provider).getAllMarkets()
-  for (const mTokenAddress of allMarkets) {
-    const underlyingToken = getContract('MErc20Delegator', targetUnderlyingTokenAddress, provider)
-
-    // Native asset will throw
     try {
       const market = getContract('MErc20Delegator', targetUnderlyingTokenAddress, provider)
       const underlyingAddress = await market.underlying()
@@ -289,8 +283,6 @@ export async function assertMarketIsNotListed(
     } catch (e: unknown) { 
       // silently swallow failure - this method isn't used for the native asset
     }
-  }
-  console.log(`    ✅ Asset is not listed`)
 }
 
 /**
@@ -315,24 +307,6 @@ export async function assertMarketIsListed(
   }
 
   throw new Error(`Market (token: ${targetUnderlyingTokenAddress}, mtoken: ${expectedAddress}) is not listed when it was expected to be!`)
-
-
-  // // Get the underlying token symbol.
-  // const underlyingToken = getContract('MErc20Delegator', targetUnderlyingTokenAddress, provider)
-  // const underlyingSymbol = await underlyingToken.symbol()
-
-  // // getMarketAddressForUnderlyingSymbol will throw if the market is not listed.
-  // let marketAddress
-  // try {
-  //   marketAddress = await getMarketAddressForUnderlyingSymbol(contracts, provider, underlyingSymbol)
-  // } catch (e: unknown) {
-  //   throw new Error(`Market ${targetUnderlyingTokenAddress} is not listed!`)
-  // }
-
-  // if (!addressesMatch(marketAddress, expectedAddress)) {
-  //   throw new Error(`Market ${targetUnderlyingTokenAddress} is listed, but not at the right address. Actual: ${marketAddress} Expected: ${expectedAddress}`)
-  // }
-  // console.log(`    ✅ Market is listed`)
 }
 
 /**
@@ -587,21 +561,4 @@ function addressesMatch(a: string, b: string) {
     throw new Error(`Invalid addresss comparison, both must start with '0x'! Inputs: ${a}, ${b}`)
   }
   return a.toUpperCase() === b.toUpperCase()
-}
-
-/**
- * Check if the given market address exists in the known markets loaded from Moonwell.js
- * 
- * @param contracts A contract bundle from Moonwell.js
- * @param needle The contract to search for.
- */
-const isKnownMarket = (contracts: ContractBundle, needle: string) => {
-  const marketSymbols = Object.keys(contracts.MARKETS)
-  for (const marketSymbol of marketSymbols) {
-    const marketAddress = contracts.MARKETS[marketSymbol].mTokenAddress
-    if (addressesMatch(marketAddress, needle)) {
-      return true
-    }
-  }
-  return false
 }
