@@ -58,19 +58,16 @@ export async function assertCurrentExpectedState(contracts: ContractBundle, prov
 
     // Assert market speeds before adjustment
     await assertMarketGovTokenRewardSpeed(contracts, provider,
-        'GLMR',
         contracts.MARKETS['GLMR'].mTokenAddress,
         new BigNumber('0.786973443223443').times(1e18),
         new BigNumber(1)
     )
     await assertMarketGovTokenRewardSpeed(contracts, provider,
-        'xcDOT',
         contracts.MARKETS['xcDOT'].mTokenAddress,
         new BigNumber('0.810821123321123000').times(1e18),
         new BigNumber(1)
     )
     await assertMarketGovTokenRewardSpeed(contracts, provider,
-        'FRAX',
         contracts.MARKETS['FRAX'].mTokenAddress,
         new BigNumber('0.786973443223443').times(1e18),
         new BigNumber(1)
