@@ -13,11 +13,6 @@ export enum REWARD_TYPES {
     NATIVE
 }
 
-export type MarketLocater = {
-    ticker: string,
-    marketAddress: string
-}
-
 export type ProposalData = {
     targets: string[]
     values: number[]
