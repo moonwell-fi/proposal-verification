@@ -317,7 +317,8 @@ export async function assertMarketRewardState(
         if (data[REWARD_TYPES.GOVTOKEN]){
             await assertMarketGovTokenRewardSpeed(
                 contracts,
-                provider, mTokenAddress,
+                provider,
+                assetTicker,
                 data[REWARD_TYPES.GOVTOKEN].expectedSupply,
                 data[REWARD_TYPES.GOVTOKEN].expectedBorrow,
             )
@@ -326,7 +327,7 @@ export async function assertMarketRewardState(
             await assertMarketNativeTokenRewardSpeed(
                 contracts,
                 provider,
-                mTokenAddress,
+                assetTicker,
                 data[REWARD_TYPES.NATIVE].expectedSupply,
                 data[REWARD_TYPES.NATIVE].expectedBorrow,
             )
