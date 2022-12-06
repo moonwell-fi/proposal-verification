@@ -311,8 +311,7 @@ export async function assertMarketRewardState(
     provider: ethers.providers.JsonRpcProvider,
     marketRewardMap: MarketRewardMap
 ) {
-    for (const [assetTicker, data] of Object.entries(marketRewardMap)){
-        const mTokenAddress = contracts.MARKETS[assetTicker].mTokenAddress
+    for (const [assetTicker, data] of Object.entries(marketRewardMap)) {
 
         if (data[REWARD_TYPES.GOVTOKEN]){
             await assertMarketGovTokenRewardSpeed(

@@ -64,7 +64,7 @@ export async function assertMarketGovTokenRewardSpeed(
   extraMarketAddresses: any = {}
 ) {
   const unitroller = contracts.COMPTROLLER.contract.connect(provider)
-  const mTokenAddress = contracts.MARKETS[assetName] ?? extraMarketAddresses[assetName]
+  const mTokenAddress = contracts.MARKETS[assetName]?.mTokenAddress ?? extraMarketAddresses[assetName]
 
   // 0 = WELL, 1 = GLMR
   const supplyRewardSpeed = new BigNumber((await unitroller.supplyRewardSpeeds(0, mTokenAddress)).toString())
@@ -93,7 +93,7 @@ export async function assertMarketNativeTokenRewardSpeed(
   extraMarketAddresses: any = {}
 ) {
   const unitroller = contracts.COMPTROLLER.contract.connect(provider)
-  const mTokenAddress = contracts.MARKETS[assetName] ?? extraMarketAddresses[assetName]
+  const mTokenAddress = contracts.MARKETS[assetName]?.mTokenAddress ?? extraMarketAddresses[assetName]
 
   // 0 = WELL/MFAM, 1 = GLMR/MOVR
   const supplyRewardSpeed = new BigNumber((await unitroller.supplyRewardSpeeds(1, mTokenAddress)).toString())
