@@ -262,37 +262,57 @@ export async function assertTransferGuardianIsNotPaused(provider: ethers.provide
 }
 
 /**
- * Assert a market is not listed by querying the comptroller. 
+ * Assert a token market is NOT listed. 
+ * 
+ * Use `assertNativeMarketIsNotListed` for the native asset.
+ * TODO(lunar-eng): Implement this function when needed.
  * 
  * @param provider An ethers provider.
  * @param contracts A contract bundle.
  * @param targetUnderlyingTokenAddress The address of an ERC-20 token to ensure is not listed. 
  */
-export async function assertMarketIsNotListed(
-  provider: ethers.providers.JsonRpcProvider, 
-  contracts: ContractBundle, 
+export async function assertTokenMarketIsNotListed(
+  provider: ethers.providers.JsonRpcProvider,
+  contracts: ContractBundle,
   targetUnderlyingTokenAddress: string
 ) {
-  // Determine native asset market - this is a special case.
-  const nativeAssetMTokenAddress = contracts.MARKETS[nativeTicker(contracts)].mTokenAddress
+  assertMarketIsNotListed(provider, contracts, targetUnderlyingTokenAddress)
+}
 
-  // List all markets
-  const comptroller = contracts.COMPTROLLER.contract.connect(provider)
-  const listedMTokenAddresses: Array<string> = await comptroller.getAllMarkets()
-  for (const listedMTokenAddress of listedMTokenAddresses) {
-    // Skip the native asset since there is no 'underlying()' function
-    if (addressesMatch(nativeAssetMTokenAddress, listedMTokenAddress)) {
-      continue
-    }
+/**
+ * Assert a token market is listed. 
+ * 
+ * Use `assertNativeMarketIsListed` for the native asset.
+ * TODO(lunar-eng): Implement this function when needed.
+ * 
+ * @param provider An ethers provider.
+ * @param contracts A contract bundle.
+ * @param targetUnderlyingTokenAddress The address of an ERC-20 token to ensure is not listed. 
+ */
+export async function assertTokenMarketIsListed(
+  provider: ethers.providers.JsonRpcProvider,
+  contracts: ContractBundle,
+  targetUnderlyingTokenAddress: string
+) {
+  assertTokenMarketIsListed(provider, contracts, targetUnderlyingTokenAddress)
+}
 
-    // Otherwise load the market and compare the underlying addresses.
-    const market = getContract('MErc20Delegator', listedMTokenAddress, provider)
-    const underlyingTokenAddress = await market.underlying()
-    if (addressesMatch(targetUnderlyingTokenAddress, underlyingTokenAddress)) {
-      throw new Error(`Token ${targetUnderlyingTokenAddress} IS listed.`)
-    }
+/**
+ * Assert a market is NOT listed by querying the comptroller. 
+ * 
+ * @param provider An ethers provider.
+ * @param contracts A contract bundle.
+ * @param targetUnderlyingTokenAddress The address of an ERC-20 token to ensure is not listed.  Pass null for the native asset.
+ */
+async function assertMarketIsNotListed(
+  provider: ethers.providers.JsonRpcProvider,
+  contracts: ContractBundle,
+  targetUnderlyingTokenAddress: string | null
+) {
+  const isListed = await isMarketListed(provider, contracts, targetUnderlyingTokenAddress)
+  if (isListed) {
+    throw new Error(`${targetUnderlyingTokenAddress ? `Token ${targetUnderlyingTokenAddress}` : 'The Native asset'} IS listed.`)
   }
-
   console.log(`    ✅ Market is NOT listed`)
 }
 
@@ -301,23 +321,60 @@ export async function assertMarketIsNotListed(
  * 
  * @param provider An ethers provider.
  * @param contracts A contract bundle.
- * @param targetUnderlyingTokenAddress The address of an ERC-20 token to ensure is not listed. 
- * @param expectedAddress The expected address of the market.
+ * @param targetUnderlyingTokenAddress The address of an ERC-20 token to ensure is not listed.  Pass null for the native asset.
  */
-export async function assertMarketIsListed(
+async function assertMarketIsListed(
   provider: ethers.providers.JsonRpcProvider,
   contracts: ContractBundle,
-  targetUnderlyingTokenAddress:
-    string, expectedAddress: string
+  targetUnderlyingTokenAddress: string | null
 ) {
-  const market = await contracts.COMPTROLLER.contract.connect(provider).markets(expectedAddress)
-
-  if (market.isListed) {
+  const isListed = await isMarketListed(provider, contracts, targetUnderlyingTokenAddress)
+  if (!isListed) {
     console.log(`    ✅ Market is listed`)
-    return
+  }
+  throw new Error(`${targetUnderlyingTokenAddress ? `Token ${targetUnderlyingTokenAddress}` : 'The Native asset'} IS listed.`)
+}
+
+/**
+ * Returns whether a market is listed by querying the comptroller. 
+ * 
+ * @param provider An ethers provider.
+ * @param contracts A contract bundle.
+ * @param targetUnderlyingTokenAddress The address of an ERC-20 token to check.  Pass null for the native asset.
+ */
+async function isMarketListed(
+  provider: ethers.providers.JsonRpcProvider,
+  contracts: ContractBundle,
+  targetUnderlyingTokenAddress: string | null
+) {
+  // Determine native asset market - this is a special case.
+  const nativeAssetMTokenAddress = contracts.MARKETS[nativeTicker(contracts)].mTokenAddress
+
+  // List all markets
+  const comptroller = contracts.COMPTROLLER.contract.connect(provider)
+  const listedMTokenAddresses: Array<string> = await comptroller.getAllMarkets()
+  for (const listedMTokenAddress of listedMTokenAddresses) {
+    // Check for native market special case because there is no 'underlying()' function on the market.
+    if (addressesMatch(nativeAssetMTokenAddress, listedMTokenAddress)) {
+      // If the native market is what is being checked for, 
+      // Otherwise just contineu
+      if (targetUnderlyingTokenAddress === null) {
+        return true
+      } else {
+        continue
+      }
+    }
+
+    // Otherwise load the market and compare the underlying addresses.
+    const market = getContract('MErc20Delegator', listedMTokenAddress, provider)
+    const underlyingTokenAddress = await market.underlying()
+    if (addressesMatch(targetUnderlyingTokenAddress, underlyingTokenAddress)) {
+      return true
+    }
   }
 
-  throw new Error(`Market (token: ${targetUnderlyingTokenAddress}, mtoken: ${expectedAddress}) is not listed when it was expected to be!`)
+  // Market is not listed.
+  return false
 }
 
 /**
