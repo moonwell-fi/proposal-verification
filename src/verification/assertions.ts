@@ -1,6 +1,6 @@
 import {ethers, BigNumber as EthersBigNumber} from "ethers";
 import BigNumber from "bignumber.js";
-import {ContractBundle, getContract, getDeployArtifact, getNativeTokenSymbol, Market} from "@moonwell-fi/moonwell.js";
+import {ContractBundle, getContract, getDeployArtifact, Market} from "@moonwell-fi/moonwell.js";
 import {govTokenTicker, nativeTicker, percentTo18DigitMantissa} from "./index";
 
 export async function assertRoundedWellBalance(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, targetAddress: string, name: string, balance: number){
@@ -307,8 +307,8 @@ export async function assertMarketIsNotListed(
 export async function assertMarketIsListed(
   provider: ethers.providers.JsonRpcProvider,
   contracts: ContractBundle,
-  targetUnderlyingTokenAddress:
-    string, expectedAddress: string
+  targetUnderlyingTokenAddress: string,
+  expectedAddress: string
 ) {
   const market = await contracts.COMPTROLLER.contract.connect(provider).markets(expectedAddress)
 
@@ -339,24 +339,6 @@ export async function assertChainlinkFeedIsNotRegistered(provider: ethers.provid
   }
   console.log(`    ✅ No Chainlink Feed registered`)
 }
-
-/**
- * Assert Chainlink returns a non-zero price for the asset backing the given mToken.
- * 
- * @param provider An ethers provider.
- * @param contracts A contract bundle.
- * @param mtokenAddress The market to inspect.
- */
- export async function assertChainlinkPricePresent(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, mtokenAddress: string) {
-  const oracle = contracts.ORACLE.contract.connect(provider)
-
-  const price = await oracle.getUnderlyingPrice(mtokenAddress)
-  if (price.eq(0)) {
-    throw new Error(`Was unable to retrieve a price for ${mtokenAddress}`)
-  }
-  console.log(`    ✅ Chainlink Feed returns a price`)
-}
-
 
 /**
  * Assert a chainlink feed is registered for a token with the given symbol.
@@ -397,6 +379,7 @@ export async function assertTimelockIsAdminOfMarket(
  * Assert the collateral factor of a market is the expected value.
  * 
  * @param provider An ethers provider.
+ * @param contracts A contract bundle.
  * @param marketAddress The address of the market.
  * @param expectedCollateralFactor The expected value.
  */
@@ -421,6 +404,7 @@ export async function assertCF(
  * Assert the borrow cap of a market is the expected value.
  * 
  * @param provider An ethers provider.
+ * @param contracts A contract bundle.
  * @param marketAddress The address of the market.
  * @param borrowCap The expected borrow cap as an integer (ex. 600 = 600 BTC)
  * @param tokenDecimals The number of decimals in the underlying token.
@@ -506,7 +490,6 @@ export async function assertMTokenProxySetCorrectly(
  * Assert the given contract has the bytecode of the MErc20Delegator.
  * 
  * @param provider An ethers provider.
- * @param contracts A contract bundle.
  * @param marketProxyAddress The market to inspect.
  */
  export async function assertMTokenProxyByteCodeMatches(
