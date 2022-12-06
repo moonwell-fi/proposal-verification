@@ -58,13 +58,14 @@ export async function assertSTKWellEmissionsPerSecond(contracts: ContractBundle,
 export async function assertMarketGovTokenRewardSpeed(
   contracts: ContractBundle,
   provider: ethers.providers.JsonRpcProvider,
-  mTokenAddress: string,
+  assetName: string,
   expectedSupplySpeed: BigNumber,
-  expectedBorrowSpeed: BigNumber
+  expectedBorrowSpeed: BigNumber,
+  extraMarketAddresses: any = {}
 ) {
   const unitroller = contracts.COMPTROLLER.contract.connect(provider)
-  const market = getContract('MErc20Delegator', mTokenAddress, provider)
-  const assetName = await market.symbol()
+  const mTokenAddress = contracts.MARKETS[assetName] ?? extraMarketAddresses[assetName]
+  console.log('resolved address to ' + mTokenAddress)
 
   // 0 = WELL, 1 = GLMR
   const supplyRewardSpeed = new BigNumber((await unitroller.supplyRewardSpeeds(0, mTokenAddress)).toString())
@@ -87,16 +88,17 @@ export async function assertMarketGovTokenRewardSpeed(
 export async function assertMarketNativeTokenRewardSpeed(
   contracts: ContractBundle,
   provider: ethers.providers.JsonRpcProvider,
-  mTokenAddress: string,
+  assetName: string,
   expectedSupplySpeed: BigNumber,
-  expectedBorrowSpeed: BigNumber
+  expectedBorrowSpeed: BigNumber,
+  extraMarketAddresses: any = {}
 ) {
-  const comptroller = contracts.COMPTROLLER.contract.connect(provider)
-  const market = getContract('MErc20Delegator', mTokenAddress, provider)
-  const assetName = await market.symbol()
+  const unitroller = contracts.COMPTROLLER.contract.connect(provider)
+  const mTokenAddress = contracts.MARKETS[assetName] ?? extraMarketAddresses[assetName]
+  console.log('resolved address to ' + mTokenAddress)
 
   // 0 = WELL/MFAM, 1 = GLMR/MOVR
-  const supplyRewardSpeed = new BigNumber((await comptroller.supplyRewardSpeeds(1, mTokenAddress)).toString())
+  const supplyRewardSpeed = new BigNumber((await unitroller.supplyRewardSpeeds(1, mTokenAddress)).toString())
 
   if (supplyRewardSpeed.isEqualTo(expectedSupplySpeed)){
     console.log(`    ✅  The SUPPLY speed on the ${assetName} market is set to ${supplyRewardSpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec`)
@@ -104,7 +106,7 @@ export async function assertMarketNativeTokenRewardSpeed(
     throw new Error(`The supply speed for ${assetName} was expected to be ${expectedSupplySpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec, found ${supplyRewardSpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec instead`)
   }
 
-  const borrowRewardSpeed = new BigNumber((await comptroller.borrowRewardSpeeds(1, mTokenAddress)).toString())
+  const borrowRewardSpeed = new BigNumber((await unitroller.borrowRewardSpeeds(1, mTokenAddress)).toString())
 
   if (borrowRewardSpeed.isEqualTo(expectedBorrowSpeed)){
     console.log(`    ✅  The BORROW speed on the ${assetName} market is set to ${borrowRewardSpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec`)

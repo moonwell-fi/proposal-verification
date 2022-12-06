@@ -66,19 +66,23 @@ async function assertExpectedStateEndStateForToken(
   // Assert no supply speeds, and a very slow borrow speed.
   const expectedBorrowSpeed = new BigNumber(1)
   const expectedSupplySpeed = new BigNumber(0)
+  const extraMarketAddresses = {}
+  extraMarketAddresses[tokenSymbol] = expectedMarketAddress
   await assertMarketNativeTokenRewardSpeed(
     contracts,
     provider,
-    expectedMarketAddress,
+    tokenSymbol,
     expectedSupplySpeed,
-    expectedBorrowSpeed
+    expectedBorrowSpeed,
+    extraMarketAddresses
   )
   await assertMarketGovTokenRewardSpeed(
     contracts,
     provider,
-    expectedMarketAddress,
+    tokenSymbol,
     expectedSupplySpeed,
-    expectedBorrowSpeed
+    expectedBorrowSpeed,
+    extraMarketAddresses
   )
 
   console.log()

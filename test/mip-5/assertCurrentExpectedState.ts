@@ -63,67 +63,67 @@ export async function assertCurrentExpectedState(contracts: ContractBundle, prov
 
     // Assert market speeds before adjustment
     await assertMarketGovTokenRewardSpeed(contracts, provider,
-        contracts.MARKETS['MOVR'].mTokenAddress,
+        'MOVR',
         new BigNumber('0.147569444444444').times(1e18),
         new BigNumber('0.347222222222222').times(1e18),
     )
     await assertMarketNativeTokenRewardSpeed(contracts, provider,
-        contracts.MARKETS['MOVR'].mTokenAddress,
+        'MOVR',
         new BigNumber('0.000590833333333333').times(1e18),
         new BigNumber('0.001378611111111110').times(1e18),
     )
 
     await assertMarketGovTokenRewardSpeed(contracts, provider,
-        contracts.MARKETS['xcKSM'].mTokenAddress,
+        'xcKSM',
         new BigNumber('0.164930555555556').times(1e18),
         new BigNumber('0.164930555555556').times(1e18),
     )
     await assertMarketNativeTokenRewardSpeed(contracts, provider,
-        contracts.MARKETS['xcKSM'].mTokenAddress,
+        'xcKSM',
         new BigNumber('0.000656481481481482').times(1e18),
         new BigNumber('0.000656481481481482').times(1e18),
     )
 
     await assertMarketGovTokenRewardSpeed(contracts, provider,
-        contracts.MARKETS['ETH.multi'].mTokenAddress,
+        'ETH.multi',
         new BigNumber('0.137731481481481').times(1e18),
         new BigNumber('0.324074074074074').times(1e18),
     )
     await assertMarketNativeTokenRewardSpeed(contracts, provider,
-        contracts.MARKETS['ETH.multi'].mTokenAddress,
+        'ETH.multi',
         new BigNumber('0.000551444444444445').times(1e18),
         new BigNumber('0.001286703703703700').times(1e18),
     )
 
     await assertMarketGovTokenRewardSpeed(contracts, provider,
-        contracts.MARKETS['USDC.multi'].mTokenAddress,
+        'USDC.multi',
         new BigNumber('0.324652777777778').times(1e18),
         new BigNumber('0.763888888888889').times(1e18),
     )
     await assertMarketNativeTokenRewardSpeed(contracts, provider,
-        contracts.MARKETS['USDC.multi'].mTokenAddress,
+        'USDC.multi',
         new BigNumber('0.001299833333333330').times(1e18),
         new BigNumber('0.003032944444444440').times(1e18),
     )
 
     await assertMarketGovTokenRewardSpeed(contracts, provider,
-        contracts.MARKETS['USDT.multi'].mTokenAddress,
+        'USDT.multi',
         new BigNumber('0.0983796296296296').times(1e18),
         new BigNumber('0.231481481481481').times(1e18),
     )
     await assertMarketNativeTokenRewardSpeed(contracts, provider,
-        contracts.MARKETS['USDT.multi'].mTokenAddress,
+        'USDT.multi',
         new BigNumber('0.000393888888888889').times(1e18),
         new BigNumber('0.000919074074074074').times(1e18),
     )
 
     await assertMarketGovTokenRewardSpeed(contracts, provider,
-        contracts.MARKETS['FRAX'].mTokenAddress,
+        'FRAX',
         new BigNumber('0.177083333333333').times(1e18),
         new BigNumber('0.416666666666667').times(1e18),
     )
     await assertMarketNativeTokenRewardSpeed(contracts, provider,
-        contracts.MARKETS['FRAX'].mTokenAddress,
+        'FRAX',
         new BigNumber('0.000709000000000000').times(1e18),
         new BigNumber('0.001654333333333330').times(1e18),
     )
