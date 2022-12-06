@@ -1,6 +1,6 @@
 import {ethers} from "ethers";
 import {
-  assertMarketIsListed,
+  assertTokenMarketIsListed,
   assertChainlinkFeedIsRegistered,
   assertTimelockIsAdminOfMarket,
   assertStorageString,
@@ -52,7 +52,7 @@ async function assertExpectedStateEndStateForToken(
   await assertTimelockIsAdminOfMarket(provider, contracts, expectedMarketAddress)
 
   // Unitroller has the market listed with the correct collateral factor
-  await assertMarketIsListed(provider, contracts, tokenAddress, expectedMarketAddress)
+  await assertTokenMarketIsListed(provider, contracts, tokenAddress)
   await assertCF(provider, contracts, expectedMarketAddress, collateralFactorPercent)
   await assertBorrowCap(provider, contracts, expectedMarketAddress, borrowCap, tokenDecimals)
 
