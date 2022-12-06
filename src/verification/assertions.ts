@@ -273,16 +273,27 @@ export async function assertMarketIsNotListed(
   contracts: ContractBundle, 
   targetUnderlyingTokenAddress: string
 ) {
+  // Determine native asset market - this is a special case.
+  const nativeAssetMTokenAddress = contracts.MARKETS[nativeTicker(contracts)].mTokenAddress
 
-    try {
-      const market = getContract('MErc20Delegator', targetUnderlyingTokenAddress, provider)
-      const underlyingAddress = await market.underlying()
-      if (addressesMatch(underlyingAddress, targetUnderlyingTokenAddress)) {
-        throw new Error(`Token ${targetUnderlyingTokenAddress} IS listed.`)
-      }
-    } catch (e: unknown) { 
-      // silently swallow failure - this method isn't used for the native asset
+  // List all markets
+  const comptroller = contracts.COMPTROLLER.contract.connect(provider)
+  const listedMTokenAddresses: Array<string> = await comptroller.getAllMarkets()
+  for (const listedMTokenAddress of listedMTokenAddresses) {
+    // Skip the native asset since there is no 'underlying()' function
+    if (addressesMatch(nativeAssetMTokenAddress, listedMTokenAddress)) {
+      continue
     }
+
+    // Otherwise load the market and compare the underlying addresses.
+    const market = getContract('MErc20Delegator', listedMTokenAddress, provider)
+    const underlyingTokenAddress = await market.underlying()
+    if (addressesMatch(targetUnderlyingTokenAddress, underlyingTokenAddress)) {
+      throw new Error(`Token ${targetUnderlyingTokenAddress} IS listed.`)
+    }
+  }
+
+  console.log(`    ✅ Market is NOT listed`)
 }
 
 /**
