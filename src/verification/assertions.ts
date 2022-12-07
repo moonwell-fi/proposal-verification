@@ -1,9 +1,9 @@
-import {ethers, BigNumber as EthersBigNumber} from "ethers";
+import { ethers, BigNumber as EthersBigNumber } from "ethers";
 import BigNumber from "bignumber.js";
-import {ContractBundle, getContract, getDeployArtifact, getNativeTokenSymbol, Market} from "@moonwell-fi/moonwell.js";
-import {govTokenTicker, nativeTicker, percentTo18DigitMantissa} from "./index";
+import { ContractBundle, getContract, getDeployArtifact, Market } from "@moonwell-fi/moonwell.js";
+import { govTokenTicker, nativeTicker, percentTo18DigitMantissa } from "./index";
 
-export async function assertRoundedWellBalance(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, targetAddress: string, name: string, balance: number){
+export async function assertRoundedWellBalance(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, targetAddress: string, name: string, balance: number) {
   const wellToken = contracts.GOV_TOKEN.contract.connect(provider)
 
   const wellBalance = new BigNumber(
@@ -12,7 +12,7 @@ export async function assertRoundedWellBalance(contracts: ContractBundle, provid
 
   const roundedBalance = wellBalance.div(1e18).integerValue()
 
-  if (roundedBalance.isEqualTo(balance)){
+  if (roundedBalance.isEqualTo(balance)) {
     console.log(`    ✅  The ${name} address has ${balance.toLocaleString()} ${govTokenTicker(contracts)}`)
   } else {
     throw new Error(`The ${name} address (${targetAddress}) was expected to have ${balance.toLocaleString()} ${govTokenTicker(contracts)}, found ${parseInt(roundedBalance.toFixed()).toLocaleString()} ${govTokenTicker(contracts)} instead`)
@@ -20,7 +20,7 @@ export async function assertRoundedWellBalance(contracts: ContractBundle, provid
 
 }
 
-export async function assertDexRewarderRewardsPerSec(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, poolID: number, rewardSlot: number, expectedRewardsPerSec: BigNumber, ticker = "(WELL OR MFAM)"){
+export async function assertDexRewarderRewardsPerSec(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, poolID: number, rewardSlot: number, expectedRewardsPerSec: BigNumber, ticker = "(WELL OR MFAM)") {
   console.log("    [-] Checking dex rewarder...")
   const dexRewarder = contracts.DEX_REWARDER.contract.connect(provider)
 
@@ -32,7 +32,7 @@ export async function assertDexRewarderRewardsPerSec(contracts: ContractBundle, 
 
   const rewardsPerSec = new BigNumber(newRewardInfo.rewardPerSec.toString())
 
-  if (rewardsPerSec.isEqualTo(expectedRewardsPerSec)){
+  if (rewardsPerSec.isEqualTo(expectedRewardsPerSec)) {
     console.log(`        ✅  The dex rewarder emissions will be set to ${rewardsPerSec.div(1e18).toFixed(18)} ${ticker}/sec on ${new Date(newRewardInfo.startTimestamp * 1000)}`)
   } else {
     throw new Error(`The Dex Rewarder was expected to have an emission speed of ${expectedRewardsPerSec.div(1e18).toFixed(18)} ${ticker}/sec, found ${rewardsPerSec.div(1e18).toFixed(18)} ${ticker}/sec instead`)
@@ -40,14 +40,14 @@ export async function assertDexRewarderRewardsPerSec(contracts: ContractBundle, 
   // poolRewardsPerSec
 }
 
-export async function assertSTKWellEmissionsPerSecond(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, expectedRewardsPerSec: BigNumber, ticker = "(WELL or MFAM)"){
+export async function assertSTKWellEmissionsPerSecond(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, expectedRewardsPerSec: BigNumber, ticker = "(WELL or MFAM)") {
   const stkWELL = contracts.SAFETY_MODULE.contract.connect(provider)
 
   const currentRewardInfo = await stkWELL.assets(stkWELL.address)
 
   const rewardsPerSec = new BigNumber(currentRewardInfo.emissionPerSecond.toString())
 
-  if (rewardsPerSec.isEqualTo(expectedRewardsPerSec)){
+  if (rewardsPerSec.isEqualTo(expectedRewardsPerSec)) {
     console.log(`    ✅  The stkWELL emissions are set to ${rewardsPerSec.div(1e18).toFixed(18)} ${ticker}/sec`)
   } else {
     throw new Error(`The stkWELL emissions were expected to be ${expectedRewardsPerSec.div(1e18).toFixed(18)} ${ticker}/sec, found ${rewardsPerSec.div(1e18).toFixed(18)} ${ticker}/sec instead`)
@@ -69,7 +69,7 @@ export async function assertMarketGovTokenRewardSpeed(
   // 0 = WELL, 1 = GLMR
   const supplyRewardSpeed = new BigNumber((await unitroller.supplyRewardSpeeds(0, mTokenAddress)).toString())
 
-  if (supplyRewardSpeed.isEqualTo(expectedSupplySpeed)){
+  if (supplyRewardSpeed.isEqualTo(expectedSupplySpeed)) {
     console.log(`    ✅  The SUPPLY speed on the ${assetName} market is set to ${supplyRewardSpeed.div(1e18).toFixed(18)} ${govTokenTicker(contracts)}/sec`)
   } else {
     throw new Error(`The supply speed for ${assetName} was expected to be ${expectedSupplySpeed.div(1e18).toFixed(18)} ${govTokenTicker(contracts)}/sec, found ${supplyRewardSpeed.div(1e18).toFixed(18)} ${govTokenTicker(contracts)}/sec instead`)
@@ -77,7 +77,7 @@ export async function assertMarketGovTokenRewardSpeed(
 
   const borrowRewardSpeed = new BigNumber((await unitroller.borrowRewardSpeeds(0, mTokenAddress)).toString())
 
-  if (borrowRewardSpeed.isEqualTo(expectedBorrowSpeed)){
+  if (borrowRewardSpeed.isEqualTo(expectedBorrowSpeed)) {
     console.log(`    ✅  The BORROW speed on the ${assetName} market is set to ${borrowRewardSpeed.div(1e18).toFixed(18)} ${govTokenTicker(contracts)}/sec`)
   } else {
     throw new Error(`The borrow speed for ${assetName} was expected to be ${expectedBorrowSpeed.div(1e18).toFixed(18)} ${govTokenTicker(contracts)}/sec, found ${borrowRewardSpeed.div(1e18).toFixed(18)} ${govTokenTicker(contracts)}/sec instead`)
@@ -98,7 +98,7 @@ export async function assertMarketNativeTokenRewardSpeed(
   // 0 = WELL/MFAM, 1 = GLMR/MOVR
   const supplyRewardSpeed = new BigNumber((await unitroller.supplyRewardSpeeds(1, mTokenAddress)).toString())
 
-  if (supplyRewardSpeed.isEqualTo(expectedSupplySpeed)){
+  if (supplyRewardSpeed.isEqualTo(expectedSupplySpeed)) {
     console.log(`    ✅  The SUPPLY speed on the ${assetName} market is set to ${supplyRewardSpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec`)
   } else {
     throw new Error(`The supply speed for ${assetName} was expected to be ${expectedSupplySpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec, found ${supplyRewardSpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec instead`)
@@ -106,155 +106,155 @@ export async function assertMarketNativeTokenRewardSpeed(
 
   const borrowRewardSpeed = new BigNumber((await unitroller.borrowRewardSpeeds(1, mTokenAddress)).toString())
 
-  if (borrowRewardSpeed.isEqualTo(expectedBorrowSpeed)){
+  if (borrowRewardSpeed.isEqualTo(expectedBorrowSpeed)) {
     console.log(`    ✅  The BORROW speed on the ${assetName} market is set to ${borrowRewardSpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec`)
   } else {
     throw new Error(`The borrow speed for ${assetName} was expected to be ${expectedBorrowSpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec, found ${borrowRewardSpeed.div(1e18).toFixed(18)} ${nativeTicker(contracts)}/sec instead`)
   }
 }
 
-export async function assertMarketBorrowIsPaused(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market){
+export async function assertMarketBorrowIsPaused(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market) {
   const comptroller = contracts.COMPTROLLER.contract.connect(provider)
 
   const result = await comptroller.borrowGuardianPaused(market.mTokenAddress)
 
-  if (result === false){
+  if (result === false) {
     throw new Error(`The ${market.name} market was expected to be paused but wasn't!`)
   } else {
     console.log(`    ✅ ${market.name} market borrow is paused`)
   }
 }
 
-export async function assertMarketBorrowIsNOTPaused(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market){
+export async function assertMarketBorrowIsNOTPaused(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market) {
   const comptroller = contracts.COMPTROLLER.contract.connect(provider)
 
   const result = await comptroller.borrowGuardianPaused(market.mTokenAddress)
 
-  if (result === true){
+  if (result === true) {
     throw new Error(`The ${market.name} market was expected to NOT be paused but was!`)
   } else {
     console.log(`    ✅ ${market.name} market borrow IS NOT paused`)
   }
 }
 
-export async function assertMarketSupplyingIsPaused(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market){
+export async function assertMarketSupplyingIsPaused(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market) {
   const comptroller = contracts.COMPTROLLER.contract.connect(provider)
 
   const result = await comptroller.mintGuardianPaused(market.mTokenAddress)
 
-  if (result === false){
+  if (result === false) {
     throw new Error(`The ${market.name} market was expected to be paused but wasn't!`)
   } else {
     console.log(`    ✅ ${market.name} market supply is paused`)
   }
 }
-export async function assertMarketSupplyingIsNOTPaused(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market){
+export async function assertMarketSupplyingIsNOTPaused(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market) {
   const comptroller = contracts.COMPTROLLER.contract.connect(provider)
 
   const result = await comptroller.mintGuardianPaused(market.mTokenAddress)
 
-  if (result === true){
+  if (result === true) {
     throw new Error(`The ${market.name} market was expected to be paused but wasn't!`)
   } else {
     console.log(`    ✅ ${market.name} market supply IS NOT paused`)
   }
 }
 
-export async function assertMarketCFIsNonZero(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market){
+export async function assertMarketCFIsNonZero(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market) {
   const comptroller = contracts.COMPTROLLER.contract.connect(provider)
 
   const marketData = await comptroller.markets(market.mTokenAddress)
 
   const mantissaFormatted = new BigNumber(marketData.collateralFactorMantissa.toString()).div(1e18)
 
-  if (marketData.collateralFactorMantissa.isZero()){
+  if (marketData.collateralFactorMantissa.isZero()) {
     throw new Error(`The ${market.name} market has CF=${mantissaFormatted.times(100)}%, which was not expected!`)
   } else {
     console.log(`    ✅ ${market.name} Collateral Factor is currently set to ${mantissaFormatted.times(100)}%`)
   }
 }
-export async function assertMarketCFIsZero(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market){
+export async function assertMarketCFIsZero(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market) {
   const comptroller = contracts.COMPTROLLER.contract.connect(provider)
 
   const marketData = await comptroller.markets(market.mTokenAddress)
 
   const mantissaFormatted = new BigNumber(marketData.collateralFactorMantissa.toString()).div(1e18)
 
-  if (!marketData.collateralFactorMantissa.isZero()){
+  if (!marketData.collateralFactorMantissa.isZero()) {
     throw new Error(`The ${market.name} market has that is NONZERO (${mantissaFormatted.times(100)}%), which was not expected!`)
   } else {
     console.log(`    ✅ ${market.name} Collateral Factor is currently set to ${mantissaFormatted.times(100)}%`)
   }
 }
 
-export async function assertMarketCFEqualsPercent(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market, expectedPercent: number){
+export async function assertMarketCFEqualsPercent(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market, expectedPercent: number) {
   const comptroller = contracts.COMPTROLLER.contract.connect(provider)
 
   const marketData = await comptroller.markets(market.mTokenAddress)
 
   const mantissaFormatted = new BigNumber(marketData.collateralFactorMantissa.toString()).div(1e18)
 
-  if (!mantissaFormatted.times(100).isEqualTo(expectedPercent)){
+  if (!mantissaFormatted.times(100).isEqualTo(expectedPercent)) {
     throw new Error(`The ${market.name} market has that DOES NOT EQUAL (${expectedPercent}%), which was not expected!`)
   } else {
     console.log(`    ✅ ${market.name} Collateral Factor is currently set to ${mantissaFormatted.times(100)}%`)
   }
 }
 
-export async function assertMarketRFIsNOTOneHundred(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market){
+export async function assertMarketRFIsNOTOneHundred(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market) {
   const mToken = new ethers.Contract(
-      market.mTokenAddress,
-      getDeployArtifact('MToken').abi,
-      provider
+    market.mTokenAddress,
+    getDeployArtifact('MToken').abi,
+    provider
   )
 
   const reserveFactor = await mToken.reserveFactorMantissa()
 
   const reserveFactorFormatted = new BigNumber(reserveFactor.toString()).div(1e18)
 
-  if (reserveFactorFormatted.eq(1)){
+  if (reserveFactorFormatted.eq(1)) {
     throw new Error(`The ${market.name} market has RF=${reserveFactorFormatted.times(100).toFixed()}%, which was not expected!`)
   } else {
     console.log(`    ✅ ${market.name} Reserve Factor is currently set to ${reserveFactorFormatted.times(100).toFixed()}%`)
   }
 }
 
-export async function assertMarketRFIsOneHundred(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market){
+export async function assertMarketRFIsOneHundred(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market) {
   const mToken = new ethers.Contract(
-      market.mTokenAddress,
-      getDeployArtifact('MToken').abi,
-      provider
+    market.mTokenAddress,
+    getDeployArtifact('MToken').abi,
+    provider
   )
 
   const reserveFactor = await mToken.reserveFactorMantissa()
 
   const reserveFactorFormatted = new BigNumber(reserveFactor.toString()).div(1e18)
 
-  if (!reserveFactorFormatted.eq(1)){
+  if (!reserveFactorFormatted.eq(1)) {
     throw new Error(`The ${market.name} market has RF=${reserveFactorFormatted.times(100).toFixed()}%, which was not expected!`)
   } else {
     console.log(`    ✅ ${market.name} Reserve Factor is currently set to ${reserveFactorFormatted.times(100).toFixed()}%`)
   }
 }
 
-export async function assertTransferGuardianPaused(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle){
+export async function assertTransferGuardianPaused(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle) {
   const comptroller = contracts.COMPTROLLER.contract.connect(provider)
 
   const transferGuardianPaused = await comptroller.transferGuardianPaused()
 
-  if (transferGuardianPaused === false){
+  if (transferGuardianPaused === false) {
     throw new Error(`Transfers are NOT paused, and expected to be paused`)
   } else {
     console.log(`    ✅ Comptroller transfer guardian IS currently paused/engaged`)
   }
 }
 
-export async function assertTransferGuardianIsNotPaused(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle){
+export async function assertTransferGuardianIsNotPaused(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle) {
   const comptroller = contracts.COMPTROLLER.contract.connect(provider)
 
   const transferGuardianPaused = await comptroller.transferGuardianPaused()
 
-  if (transferGuardianPaused === true){
+  if (transferGuardianPaused === true) {
     throw new Error(`Transfers ARE paused, and expected to NOT be paused`)
   } else {
     console.log(`    ✅ Comptroller transfer guardian is NOT currently paused/engaged`)
@@ -326,7 +326,8 @@ async function assertMarketIsNotListed(
 async function assertMarketIsListed(
   provider: ethers.providers.JsonRpcProvider,
   contracts: ContractBundle,
-  targetUnderlyingTokenAddress: string | null
+  targetUnderlyingTokenAddress: string,
+  expectedAddress: string
 ) {
   const isListed = await isMarketListed(provider, contracts, targetUnderlyingTokenAddress)
   if (!isListed) {
@@ -398,24 +399,6 @@ export async function assertChainlinkFeedIsNotRegistered(provider: ethers.provid
 }
 
 /**
- * Assert Chainlink returns a non-zero price for the asset backing the given mToken.
- * 
- * @param provider An ethers provider.
- * @param contracts A contract bundle.
- * @param mtokenAddress The market to inspect.
- */
- export async function assertChainlinkPricePresent(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, mtokenAddress: string) {
-  const oracle = contracts.ORACLE.contract.connect(provider)
-
-  const price = await oracle.getUnderlyingPrice(mtokenAddress)
-  if (price.eq(0)) {
-    throw new Error(`Was unable to retrieve a price for ${mtokenAddress}`)
-  }
-  console.log(`    ✅ Chainlink Feed returns a price`)
-}
-
-
-/**
  * Assert a chainlink feed is registered for a token with the given symbol.
  * 
  * NOTE: This function will fail if given the native asset.
@@ -426,7 +409,7 @@ export async function assertChainlinkFeedIsNotRegistered(provider: ethers.provid
  * @param targetSymbol The symbol of an asset to query.
  * @param expectedAddress The expected feed. 
  */
- export async function assertChainlinkFeedIsRegistered(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, targetSymbol: string, expectedAddress: string) {
+export async function assertChainlinkFeedIsRegistered(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, targetSymbol: string, expectedAddress: string) {
   const oracle = contracts.ORACLE.contract.connect(provider)
 
   const feed = await oracle.getFeed(targetSymbol)
@@ -441,7 +424,7 @@ export async function assertChainlinkFeedIsNotRegistered(provider: ethers.provid
 }
 
 export async function assertTimelockIsAdminOfMarket(
-  provider: ethers.providers.JsonRpcProvider, 
+  provider: ethers.providers.JsonRpcProvider,
   contracts: ContractBundle,
   marketAddress: string
 ) {
@@ -454,11 +437,12 @@ export async function assertTimelockIsAdminOfMarket(
  * Assert the collateral factor of a market is the expected value.
  * 
  * @param provider An ethers provider.
+ * @param contracts A contract bundle.
  * @param marketAddress The address of the market.
  * @param expectedCollateralFactor The expected value.
  */
 export async function assertCF(
-  provider: ethers.providers.JsonRpcProvider, 
+  provider: ethers.providers.JsonRpcProvider,
   contracts: ContractBundle,
   marketAddress: string,
   expectedCollateralFactor: number
@@ -478,12 +462,13 @@ export async function assertCF(
  * Assert the borrow cap of a market is the expected value.
  * 
  * @param provider An ethers provider.
+ * @param contracts A contract bundle.
  * @param marketAddress The address of the market.
  * @param borrowCap The expected borrow cap as an integer (ex. 600 = 600 BTC)
  * @param tokenDecimals The number of decimals in the underlying token.
  */
- export async function assertBorrowCap(
-  provider: ethers.providers.JsonRpcProvider, 
+export async function assertBorrowCap(
+  provider: ethers.providers.JsonRpcProvider,
   contracts: ContractBundle,
   marketAddress: string,
   borrowCap: number,
@@ -507,7 +492,7 @@ export async function assertCF(
  * @param expectedRFPercent The expected value.
  */
 export async function assertMarketRF(
-  provider: ethers.providers.JsonRpcProvider, 
+  provider: ethers.providers.JsonRpcProvider,
   marketAddress: string,
   expectedRFPercent: number
 ) {
@@ -529,12 +514,12 @@ export async function assertMarketRF(
  * @param expectedSeizeSharePercent The expected value.
  */
 export async function assertMarketSeizeShare(
-  provider: ethers.providers.JsonRpcProvider, 
+  provider: ethers.providers.JsonRpcProvider,
   marketAddress: string,
   expectedSeizeSharePercent: number
 ) {
   const market = getContract('MToken', marketAddress, provider)
-  
+
   const seizeShare = await market.protocolSeizeShareMantissa()
   const expected = percentTo18DigitMantissa(expectedSeizeSharePercent)
   if (!seizeShare.eq(expected)) {
@@ -551,8 +536,8 @@ export async function assertMarketSeizeShare(
  * @param marketProxyAddress The market to inspect.
  */
 export async function assertMTokenProxySetCorrectly(
-  provider: ethers.providers.JsonRpcProvider, 
-  contracts: ContractBundle, 
+  provider: ethers.providers.JsonRpcProvider,
+  contracts: ContractBundle,
   marketProxyAddress: string
 ) {
   const mTokenProxy = getContract('MErc20Delegator', marketProxyAddress, provider)
@@ -563,11 +548,10 @@ export async function assertMTokenProxySetCorrectly(
  * Assert the given contract has the bytecode of the MErc20Delegator.
  * 
  * @param provider An ethers provider.
- * @param contracts A contract bundle.
  * @param marketProxyAddress The market to inspect.
  */
- export async function assertMTokenProxyByteCodeMatches(
-  provider: ethers.providers.JsonRpcProvider, 
+export async function assertMTokenProxyByteCodeMatches(
+  provider: ethers.providers.JsonRpcProvider,
   marketProxyAddress: string
 ) {
   const byteCode = await provider.getCode(marketProxyAddress)
@@ -587,15 +571,15 @@ export async function assertMTokenProxySetCorrectly(
  * @param methodName The view method name to call on the contract to get the actual value.
  */
 export async function assertStorageString(
-  contract: any, 
-  expected: string, 
+  contract: any,
+  expected: string,
   methodName: string
 ) {
-    const value: string = await contract[methodName]()
-    if (value !== expected) {
-      throw new Error(`Unexpected storage value in ${contract.address}.${methodName}. Expected: ${expected}, Actual: ${value}`)
-    }
-    console.log(`    ✅ ${methodName} set correctly.`)
+  const value: string = await contract[methodName]()
+  if (value !== expected) {
+    throw new Error(`Unexpected storage value in ${contract.address}.${methodName}. Expected: ${expected}, Actual: ${value}`)
+  }
+  console.log(`    ✅ ${methodName} set correctly.`)
 }
 
 /**
@@ -606,8 +590,8 @@ export async function assertStorageString(
  * @param methodName The view method name to call on the contract to get the actual value.
  */
 export async function assertStorageAddress(
-  contract: any, 
-  expected: string, 
+  contract: any,
+  expected: string,
   methodName: string
 ) {
   const value: string = await contract[methodName]()
