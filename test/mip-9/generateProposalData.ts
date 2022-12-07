@@ -1,7 +1,7 @@
 import {ethers} from "ethers";
 import {BigNumber as EthersBigNumber} from "@ethersproject/bignumber/lib/bignumber";
 import {ContractBundle} from "@moonwell-fi/moonwell.js";
-import {addMarketAdjustementsToProposal, addProposalToPropData, REWARD_TYPES} from "../../src";
+import {addMarketAdjustementsToProposal, addProposalToPropData} from "../../src";
 import BigNumber from "bignumber.js";
 import {ECOSYSTEM_RESERVE, ENDING_MARKET_REWARDS_STATE, F_MOVR_GRANT, SENDAMTS, SUBMITTER_WALLET} from "./vars";
 
