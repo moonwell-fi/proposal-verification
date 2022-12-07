@@ -2,8 +2,6 @@ import {ethers} from "ethers";
 
 import {ContractBundle} from "@moonwell-fi/moonwell.js";
 import {
-    ECOSYSTEM_RESERVE,
-    EXPECTED_STARTING_WELL_HOLDINGS, F_GLMR_LM,
     SENDAMTS,
 } from "./vars";
 import {SUBMITTER_WALLET} from "./vars";

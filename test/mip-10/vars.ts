@@ -1,5 +1,4 @@
-import {MarketRewardMap, REWARD_TYPES, TokenHoldingsMap} from "../../src";
-import BigNumber from "bignumber.js";
+import {TokenHoldingsMap} from "../../src";
 
 export const ECOSYSTEM_RESERVE = '0x7793E08Eb4525309C46C9BA394cE33361A167ba4'
 export const F_GLMR_LM = '0x6972f25AB3FC425EaF719721f0EBD1Cdb58eE451'

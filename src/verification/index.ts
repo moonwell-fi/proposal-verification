@@ -189,7 +189,7 @@ export async function setupDeployerAndEnvForGovernance(contracts: ContractBundle
 }
 
 export const sleep = async (pauseDelay: number) => {
-    await new Promise<void>((resolve, reject) => {
+    await new Promise<void>((resolve) => {
         setTimeout(() => {
             resolve();
         }, pauseDelay * 1000);
@@ -233,24 +233,6 @@ export async function startGanache(contracts: ContractBundle, forkBlock: number,
  */
 export function percentTo18DigitMantissa(percent: number): ethers.BigNumber {
     return EthersBigNumber.from(percent).mul(EthersBigNumber.from("10").pow("16"))
-}
-
-export async function ensureWalletIsFunded(provider: ethers.providers.JsonRpcProvider, walletAddress: string){
-    const wallet = await provider.getSigner(walletAddress)
-    const mantissa = EthersBigNumber.from(1).mul(10).pow(18)
-
-    const walletBalance = await wallet.getBalance()
-    console.log(walletBalance.toString())
-
-    if (walletBalance.isZero()){
-        // Fund the WELL treasury
-        await provider.send('evm_setAccountBalance',
-            [walletAddress, 1e18]
-        )
-        console.log(`[+] Funded wallet (${walletAddress}) with 1 token`)
-    } else {
-        console.log(`[+] Wallet (${walletAddress}) already has ${walletBalance.div(mantissa)} native tokens`)
-    }
 }
 
 export async function replaceXCAssetWithDummyERC20(provider: ethers.providers.JsonRpcProvider, marketToClone: Market, marketToReplace: Market){
