@@ -1,7 +1,7 @@
 import {ethers} from "ethers";
 import {
   assertChainlinkFeedIsNotRegistered,
-  assertMarketIsNotListed
+  assertTokenMarketIsNotListed
 } from "../../src/verification/assertions";
 
 import {ContractBundle} from "@moonwell-fi/moonwell.js";
@@ -14,7 +14,7 @@ async function assertExpectedStateForToken(
   chainlinkFeedForToken: string
 ) {
   console.log(`[+] Asserting market for ${token} does not exist`)
-  await assertMarketIsNotListed(provider, contracts, token)
+  await assertTokenMarketIsNotListed(provider, contracts, token)
   await assertChainlinkFeedIsNotRegistered(provider, contracts, chainlinkFeedForToken)
 }
 

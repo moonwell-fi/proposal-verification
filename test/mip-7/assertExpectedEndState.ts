@@ -1,6 +1,6 @@
 import {ethers} from "ethers";
 import {
-  assertMarketIsListed,
+  assertTokenMarketIsListed,
   assertChainlinkFeedIsRegistered,
   assertTimelockIsAdminOfMarket,
   assertStorageString,
@@ -52,7 +52,7 @@ async function assertExpectedStateEndStateForToken(
   await assertTimelockIsAdminOfMarket(provider, contracts, expectedMarketAddress)
 
   // Unitroller has the market listed with the correct collateral factor
-  await assertMarketIsListed(provider, contracts, tokenAddress, expectedMarketAddress)
+  await assertTokenMarketIsListed(provider, contracts, tokenAddress)
   await assertCF(provider, contracts, expectedMarketAddress, collateralFactorPercent)
   await assertBorrowCap(provider, contracts, expectedMarketAddress, borrowCap, tokenDecimals)
 
@@ -66,8 +66,24 @@ async function assertExpectedStateEndStateForToken(
   // Assert no supply speeds, and a very slow borrow speed.
   const expectedBorrowSpeed = new BigNumber(1)
   const expectedSupplySpeed = new BigNumber(0)
-  await assertMarketNativeTokenRewardSpeed(contracts, provider, tokenSymbol, expectedSupplySpeed, expectedBorrowSpeed)
-  await assertMarketGovTokenRewardSpeed(contracts, provider, tokenSymbol, expectedSupplySpeed, expectedBorrowSpeed)
+  const extraMarketAddresses = {}
+  extraMarketAddresses[tokenSymbol] = expectedMarketAddress
+  await assertMarketNativeTokenRewardSpeed(
+    contracts,
+    provider,
+    tokenSymbol,
+    expectedSupplySpeed,
+    expectedBorrowSpeed,
+    extraMarketAddresses
+  )
+  await assertMarketGovTokenRewardSpeed(
+    contracts,
+    provider,
+    tokenSymbol,
+    expectedSupplySpeed,
+    expectedBorrowSpeed,
+    extraMarketAddresses
+  )
 
   console.log()
 }

@@ -90,7 +90,6 @@ test("mip 7", async () => {
         await assertCurrentExpectedState(provider, contracts, tokensToList, chainlinkAddresses)
 
         // Generate proposal data
-        const deployer = await provider.getSigner(0)
         const {proposal, mTokenDeployResults} = await generateProposalData()
 
         // Pass the proposal

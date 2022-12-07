@@ -36,8 +36,8 @@ export type TokenHoldingsMap = {
 }
 
 
-export async function passGovProposal(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, proposalData: ProposalData, signerAddressOrIndex: number | string = 0){
-    console.log("[+] Submitting the following proposal to governance\n", JSON.stringify(proposalData, null ,2), '\n======')
+export async function passGovProposal(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, proposalData: ProposalData, signerAddressOrIndex: number | string = 0, logProposal = true){
+    logProposal && console.log("[+] Submitting the following proposal to governance\n", JSON.stringify(proposalData, null ,2), '\n======')
 
     const governor = contracts.GOVERNOR.contract.connect(provider.getSigner(signerAddressOrIndex))
 
@@ -189,7 +189,7 @@ export async function setupDeployerAndEnvForGovernance(contracts: ContractBundle
 }
 
 export const sleep = async (pauseDelay: number) => {
-    await new Promise<void>((resolve, reject) => {
+    await new Promise<void>((resolve) => {
         setTimeout(() => {
             resolve();
         }, pauseDelay * 1000);
@@ -207,6 +207,7 @@ export async function startGanache(contracts: ContractBundle, forkBlock: number,
       ${unlockAddresses && unlockAddresses.map(i => '--wallet.unlockedAccounts ' + i).join(' ')} 
       --fork.url "${rpcURL}"
       --fork.blockNumber ${forkBlock}
+      --server.host=0.0.0.0
       --wallet.defaultBalance ${ ethers.utils.parseEther("2.0") }
     `.replace(/\n/g, ' ')
      .replace(/  +/g, ' ');
@@ -232,24 +233,6 @@ export async function startGanache(contracts: ContractBundle, forkBlock: number,
  */
 export function percentTo18DigitMantissa(percent: number): ethers.BigNumber {
     return EthersBigNumber.from(percent).mul(EthersBigNumber.from("10").pow("16"))
-}
-
-export async function ensureWalletIsFunded(provider: ethers.providers.JsonRpcProvider, walletAddress: string){
-    const wallet = await provider.getSigner(walletAddress)
-    const mantissa = EthersBigNumber.from(1).mul(10).pow(18)
-
-    const walletBalance = await wallet.getBalance()
-    console.log(walletBalance.toString())
-
-    if (walletBalance.isZero()){
-        // Fund the WELL treasury
-        await provider.send('evm_setAccountBalance',
-            [walletAddress, 1e18]
-        )
-        console.log(`[+] Funded wallet (${walletAddress}) with 1 token`)
-    } else {
-        console.log(`[+] Wallet (${walletAddress}) already has ${walletBalance.div(mantissa)} native tokens`)
-    }
 }
 
 export async function replaceXCAssetWithDummyERC20(provider: ethers.providers.JsonRpcProvider, marketToClone: Market, marketToReplace: Market){
@@ -305,17 +288,26 @@ export async function replaceXCAssetWithDummyERC20(provider: ethers.providers.Js
     // ])
 }
 
-export async function assertMarketRewardState(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, marketRewardMap: MarketRewardMap){
-    for (const [assetTicker, data] of Object.entries(marketRewardMap)){
+export async function assertMarketRewardState(
+    contracts: ContractBundle,
+    provider: ethers.providers.JsonRpcProvider,
+    marketRewardMap: MarketRewardMap
+) {
+    for (const [assetTicker, data] of Object.entries(marketRewardMap)) {
+
         if (data[REWARD_TYPES.GOVTOKEN]){
-            await assertMarketGovTokenRewardSpeed(contracts, provider,
+            await assertMarketGovTokenRewardSpeed(
+                contracts,
+                provider,
                 assetTicker,
                 data[REWARD_TYPES.GOVTOKEN].expectedSupply,
                 data[REWARD_TYPES.GOVTOKEN].expectedBorrow,
             )
         }
         if (data[REWARD_TYPES.NATIVE]){
-            await assertMarketNativeTokenRewardSpeed(contracts, provider,
+            await assertMarketNativeTokenRewardSpeed(
+                contracts,
+                provider,
                 assetTicker,
                 data[REWARD_TYPES.NATIVE].expectedSupply,
                 data[REWARD_TYPES.NATIVE].expectedBorrow,
