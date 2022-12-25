@@ -148,6 +148,31 @@ export async function assertMarketSupplyingIsPaused(provider: ethers.providers.J
     console.log(`    ✅ ${market.name} market supply is paused`)
   }
 }
+
+export async function assertLiquidationsIsPaused(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle) {
+  const comptroller = contracts.COMPTROLLER.contract.connect(provider)
+
+  const result = await comptroller.seizeGuardianPaused()
+
+  if (result === true) {
+    throw new Error(`Liquidations were expected to NOT be paused but were!`)
+  } else {
+    console.log(`    ✅ Liquidations are paused`)
+  }
+}
+
+export async function assertLiquidationsIsNOTPaused(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle) {
+  const comptroller = contracts.COMPTROLLER.contract.connect(provider)
+
+  const result = await comptroller.seizeGuardianPaused()
+
+  if (result === false) {
+    throw new Error(`Liquidations were expected to NOT be paused but was!`)
+  } else {
+    console.log(`    ✅ Liquidations are not paused`)
+  }
+}
+
 export async function assertMarketSupplyingIsNOTPaused(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle, market: Market) {
   const comptroller = contracts.COMPTROLLER.contract.connect(provider)
 
