@@ -8,24 +8,23 @@ import {
 
 import {Contracts} from '@moonwell-fi/moonwell.js'
 import {generateProposalData} from "./generateProposalData";
-import {generateProposalData as MIP12GenerateProposalData} from "./generateProposalData";
 import {assertCurrentExpectedState} from "./assertCurrentExpectedState";
 import {assertExpectedEndState} from "./assertExpectedEndState";
-import {C_GLMR_APPDEV, F_GLMR_LM} from "./vars";
+import {fMOVRGrant} from "./vars";
 
 const FORK_BLOCK = 3261444
 
-// TODO: correct value
-const EXPECTED_COLLATERAL_FACTOR_USDC = 123456
+const EXPECTED_USDC_COLLATERAL_FACTOR  = 1234567
 
 test("mip-12-verifications", async () => {
 
-    const contracts = Contracts.moonbeam
+    const contracts = Contracts.moonriver
 
-    const forkedChainProcess = await startGanache(contracts,
+    const forkedChainProcess = await startGanache(
+        contracts,
         FORK_BLOCK,
-        'https://rpc.api.moonbeam.network',
-        [F_GLMR_LM, C_GLMR_APPDEV]
+        'https://rpc.api.moonriver.moonbeam.network',
+        [fMOVRGrant]
     )
 
     console.log("Waiting 5 seconds for chain to bootstrap...")
@@ -34,16 +33,11 @@ test("mip-12-verifications", async () => {
     try {
         const provider = new ethers.providers.JsonRpcProvider('http://127.0.0.1:8545')
 
-        // Go transfer WELL to the deployer key from the cGLMRAPPDEV treasury, delegate those well to the deployer,
+        // Go transfer MFAM to the deployer key from the fMOVRGrant treasury, delegate those well to the deployer,
         // and assert the deployer has enough voting power to pass a proposal
-        await setupDeployerAndEnvForGovernance(contracts, provider, C_GLMR_APPDEV, FORK_BLOCK)
+        await setupDeployerAndEnvForGovernance(contracts, provider, fMOVRGrant, FORK_BLOCK)
 
         await assertCurrentExpectedState(contracts, provider)
-
-        // Go pass MIP-12
-        console.log('[+] Passing MIP-12...')
-        const mip12 = await MIP12GenerateProposalData(contracts, provider)
-        await passGovProposal(contracts, provider, mip12, 0, false)
 
         // Generate new proposal data
         const proposalData = await generateProposalData(contracts, provider)
@@ -52,7 +46,7 @@ test("mip-12-verifications", async () => {
         await passGovProposal(contracts, provider, proposalData)
 
         // Assert that our end state is as desired
-        await assertExpectedEndState(contracts, provider, EXPECTED_COLLATERAL_FACTOR_USDC)
+        await assertExpectedEndState(contracts, provider, EXPECTED_USDC_COLLATERAL_FACTOR)
     } finally {
         // Kill our child chain.
         console.log("Shutting down Ganache chain. PID", forkedChainProcess.pid!)
