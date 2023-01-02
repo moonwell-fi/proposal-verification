@@ -149,25 +149,25 @@ export async function assertMarketSupplyingIsPaused(provider: ethers.providers.J
   }
 }
 
-export async function assertLiquidationsIsPaused(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle) {
+export async function assertLiquidationsArePaused(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle) {
   const comptroller = contracts.COMPTROLLER.contract.connect(provider)
 
   const result = await comptroller.seizeGuardianPaused()
 
-  if (result === true) {
+  if (result === false) {
     throw new Error(`Liquidations were expected to NOT be paused but were!`)
   } else {
     console.log(`    ✅ Liquidations are paused`)
   }
 }
 
-export async function assertLiquidationsIsNOTPaused(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle) {
+export async function assertLiquidationsAreNOTPaused(provider: ethers.providers.JsonRpcProvider, contracts: ContractBundle) {
   const comptroller = contracts.COMPTROLLER.contract.connect(provider)
 
   const result = await comptroller.seizeGuardianPaused()
 
-  if (result === false) {
-    throw new Error(`Liquidations were expected to NOT be paused but was!`)
+  if (result === true) {
+    throw new Error(`Liquidations were expected to NOT be paused but were!`)
   } else {
     console.log(`    ✅ Liquidations are not paused`)
   }

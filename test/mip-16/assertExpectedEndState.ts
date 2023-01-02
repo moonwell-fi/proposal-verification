@@ -1,11 +1,11 @@
 import {ethers} from "ethers";
 
 import {ContractBundle} from "@moonwell-fi/moonwell.js";
-import { assertLiquidationsIsNOTPaused, assertMarketBorrowIsNOTPaused, assertCF } from '../../src/verification/assertions'
+import { assertLiquidationsAreNOTPaused, assertMarketBorrowIsNOTPaused, assertCF } from '../../src/verification/assertions'
 
 export async function assertExpectedEndState(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, expectedUSDCCollateralFactor: number){
     // Global liquidations are paused
-    await assertLiquidationsIsNOTPaused(provider, contracts)
+    await assertLiquidationsAreNOTPaused(provider, contracts)
 
     // Each market is also paused.
     const markets = Object.keys(contracts.MARKETS)

@@ -12,11 +12,11 @@ import {assertCurrentExpectedState} from "./assertCurrentExpectedState";
 import {assertExpectedEndState} from "./assertExpectedEndState";
 import {fMOVRGrant} from "./vars";
 
-const FORK_BLOCK = 3261444
+const FORK_BLOCK =  3262019 
 
-const EXPECTED_USDC_COLLATERAL_FACTOR  = 1234567
+const EXPECTED_USDC_COLLATERAL_FACTOR  = 640000000000000000
 
-test("mip-12-verifications", async () => {
+test("mip-16-verifications", async () => {
 
     const contracts = Contracts.moonriver
 

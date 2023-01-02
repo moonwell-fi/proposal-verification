@@ -1,13 +1,13 @@
 import {ethers} from "ethers";
 
 import {ContractBundle} from "@moonwell-fi/moonwell.js";
-import { assertLiquidationsIsPaused, assertMarketBorrowIsPaused } from '../../src/verification/assertions'
+import { assertLiquidationsArePaused, assertMarketBorrowIsPaused } from '../../src/verification/assertions'
 
 export async function assertCurrentExpectedState(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider){
     console.log("[+] Asserting system is in a paused state")
 
     // Global liquidations are paused
-    await assertLiquidationsIsPaused(provider, contracts)
+    await assertLiquidationsArePaused(provider, contracts)
 
     // Each market is also paused.
     const markets = Object.keys(contracts.MARKETS)
