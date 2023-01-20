@@ -81,7 +81,7 @@ export const ENDING_MARKET_REWARDS_STATE : MarketRewardMap = {
             expectedBorrow: new BigNumber("0.000164120370370370").times(1e18),
         },
         [REWARD_TYPES.GOVTOKEN]: {
-            expectedSupply: new BigNumber("0.230902777777778000").times(1e18),
+            expectedSupply: new BigNumber("0.137731481481481000").times(1e18),
             expectedBorrow: new BigNumber("0.131944444444444000").times(1e18),
         },
     },
