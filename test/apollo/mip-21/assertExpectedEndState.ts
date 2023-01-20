@@ -30,6 +30,7 @@ export async function assertExpectedEndState(contracts: ContractBundle, provider
         11,
         24,
         new BigNumber('5.523641184268670000').times(1e18),
+        "MFAM"
     )
 
     await assertSTKWellEmissionsPerSecond(contracts, provider,
