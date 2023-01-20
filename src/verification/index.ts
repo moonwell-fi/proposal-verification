@@ -70,8 +70,8 @@ export async function passLatestGovProposal(contracts: ContractBundle, provider:
     console.log(`[+] Executed in hash: ${executeResult.hash}`)
 }
 
-export async function passGovProposal(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, proposalData: ProposalData, signerAddressOrIndex: number | string = 0, logProposal = true){
-    logProposal && console.log("[+] Submitting the following proposal to governance\n", JSON.stringify(proposalData, null ,2), '\n======')
+export async function passGovProposal(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, proposalData: ProposalData, signerAddressOrIndex: number | string = 0, shouldLogProposal = true){
+    shouldLogProposal && console.log("[+] Submitting the following proposal to governance\n" + JSON.stringify(proposalData, null ,2), '\n======')
 
     const governor = contracts.GOVERNOR.contract.connect(provider.getSigner(signerAddressOrIndex))
 
@@ -376,11 +376,25 @@ export async function addMarketAdjustementsToProposal(
     extraMarketAddresses: any = {}
 ){
     // For each market
+    const spacer = '\n            - '
+
     for (const [assetTicker, data] of Object.entries(marketRewardMap)){
         // And each reward type
         for (let [assetType, supplyBorrowData] of Object.entries(data)){
             const ticker = parseInt(assetType) === REWARD_TYPES.GOVTOKEN ? govTokenTicker(contracts) : nativeTicker(contracts)
-            console.log(`    📝 Adding proposal call for \`_setRewardSpeed\` on the ${assetTicker} market with emissions: SUPPLY: ${supplyBorrowData.expectedSupply.div(1e18).toFixed(18)} ${ticker}/sec and BORROW: ${supplyBorrowData.expectedBorrow.div(1e18).toFixed(18)} ${ticker}/sec`)
+            console.log([
+                `    📝 Adding proposal call for \`_setRewardSpeed\` on the ${assetTicker} market with emissions:`,
+                `SUPPLY: ` + spacer + [
+                    `${supplyBorrowData.expectedSupply.div(1e18).toFixed(18)} ${ticker}/sec`,
+                    `${parseFloat(supplyBorrowData.expectedSupply.div(1e18).times(86400).toFixed(2)).toLocaleString()} ${ticker}/day`,
+                    `${parseFloat(supplyBorrowData.expectedSupply.div(1e18).times(86400).times(30).toFixed(2)).toLocaleString()} ${ticker}/month`
+                ].join(spacer),
+                `BORROW: ` + spacer + [
+                    `${supplyBorrowData.expectedBorrow.div(1e18).toFixed(18)} ${ticker}/sec`,
+                    `${parseFloat(supplyBorrowData.expectedBorrow.div(1e18).times(86400).toFixed(2)).toLocaleString()} ${ticker}/day`,
+                    `${parseFloat(supplyBorrowData.expectedBorrow.div(1e18).times(86400).times(30).toFixed(2)).toLocaleString()} ${ticker}/month`
+                ].join(spacer),
+            ].join('\n        '))
             // Add the proposed reward speed
             await addProposalToPropData(unitroller, '_setRewardSpeed',
                 [
