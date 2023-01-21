@@ -82,7 +82,7 @@ export const ENDING_MARKET_REWARDS_STATE : MarketRewardMap = {
         },
         [REWARD_TYPES.GOVTOKEN]: {
             expectedSupply: new BigNumber("0.137731481481481000").times(1e18),
-            expectedBorrow: new BigNumber("0.131944444444444000").times(1e18),
+            expectedBorrow: new BigNumber("0.185185185185185000").times(1e18),
         },
     },
     'ETH.multi': {
