@@ -36,8 +36,42 @@ export type TokenHoldingsMap = {
 }
 
 
-export async function passGovProposal(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, proposalData: ProposalData, signerAddressOrIndex: number | string = 0, logProposal = true){
-    logProposal && console.log("[+] Submitting the following proposal to governance\n", JSON.stringify(proposalData, null ,2), '\n======')
+export async function passLatestGovProposal(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, signerAddressOrIndex: number | string = 0){
+    console.log('[+] Passing most recent gov proposal pending in the timelock...')
+    const governor = contracts.GOVERNOR.contract.connect(provider.getSigner(signerAddressOrIndex))
+
+    const latestProposal = await governor.proposals(await governor.proposalCount())
+
+    const voteValueYes = 0
+    const voteResult = await governor.castVote(latestProposal.id, voteValueYes)
+    await voteResult.wait()
+    console.log(`[+] Voted for proposal in ${voteResult.hash}`)
+
+    // Delay until voting end by waiting until the end time and mining one more block
+    console.log("[+] Fast forwarding in time...")
+    await provider.send("evm_mine", [latestProposal.endTimestamp.toNumber() + 1]);
+
+    // Queue our proposal
+    const queueResult = await governor.queue(latestProposal.id)
+    await queueResult.wait()
+    console.log(`[+] Queued for Execution in Hash: ${queueResult.hash}`)
+
+    const timelock = contracts.TIMELOCK.contract.connect(provider)
+
+    // Delay for the timelock to complete by waiting for the timelock's delay, and then waiting one more block
+    const delay = await timelock.delay()
+    const lastBlock = await provider.getBlock("latest")
+    await provider.send("evm_mine", [lastBlock.timestamp + delay.toNumber() + 1]);
+
+    // Execute that shit yo
+    const executeResult = await governor.execute(latestProposal.id)
+    await executeResult.wait()
+
+    console.log(`[+] Executed in hash: ${executeResult.hash}`)
+}
+
+export async function passGovProposal(contracts: ContractBundle, provider: ethers.providers.JsonRpcProvider, proposalData: ProposalData, signerAddressOrIndex: number | string = 0, shouldLogProposal = true){
+    shouldLogProposal && console.log("[+] Submitting the following proposal to governance\n" + JSON.stringify(proposalData, null ,2), '\n======')
 
     const governor = contracts.GOVERNOR.contract.connect(provider.getSigner(signerAddressOrIndex))
 
@@ -291,7 +325,8 @@ export async function replaceXCAssetWithDummyERC20(provider: ethers.providers.Js
 export async function assertMarketRewardState(
     contracts: ContractBundle,
     provider: ethers.providers.JsonRpcProvider,
-    marketRewardMap: MarketRewardMap
+    marketRewardMap: MarketRewardMap,
+    extraMarketAddresses: any = {}
 ) {
     for (const [assetTicker, data] of Object.entries(marketRewardMap)) {
 
@@ -302,6 +337,7 @@ export async function assertMarketRewardState(
                 assetTicker,
                 data[REWARD_TYPES.GOVTOKEN].expectedSupply,
                 data[REWARD_TYPES.GOVTOKEN].expectedBorrow,
+                extraMarketAddresses
             )
         }
         if (data[REWARD_TYPES.NATIVE]){
@@ -311,6 +347,7 @@ export async function assertMarketRewardState(
                 assetTicker,
                 data[REWARD_TYPES.NATIVE].expectedSupply,
                 data[REWARD_TYPES.NATIVE].expectedBorrow,
+                extraMarketAddresses
             )
         }
     }
@@ -331,18 +368,38 @@ export function nativeTicker(contracts){
     }
 }
 
-export async function addMarketAdjustementsToProposal(contracts : ContractBundle, unitroller : Contract, proposalData: any, marketRewardMap: MarketRewardMap){
+export async function addMarketAdjustementsToProposal(
+    contracts : ContractBundle,
+    unitroller : Contract,
+    proposalData: any,
+    marketRewardMap: MarketRewardMap,
+    extraMarketAddresses: any = {}
+){
     // For each market
+    const spacer = '\n            - '
+
     for (const [assetTicker, data] of Object.entries(marketRewardMap)){
         // And each reward type
         for (let [assetType, supplyBorrowData] of Object.entries(data)){
             const ticker = parseInt(assetType) === REWARD_TYPES.GOVTOKEN ? govTokenTicker(contracts) : nativeTicker(contracts)
-            console.log(`    📝 Adding proposal call for \`_setRewardSpeed\` on the ${assetTicker} market with emissions: SUPPLY: ${supplyBorrowData.expectedSupply.div(1e18).toFixed(18)} ${ticker}/sec and BORROW: ${supplyBorrowData.expectedBorrow.div(1e18).toFixed(18)} ${ticker}/sec`)
+            console.log([
+                `    📝 Adding proposal call for \`_setRewardSpeed\` on the ${assetTicker} market with emissions:`,
+                `SUPPLY: ` + spacer + [
+                    `${supplyBorrowData.expectedSupply.div(1e18).toFixed(18)} ${ticker}/sec`,
+                    `${parseFloat(supplyBorrowData.expectedSupply.div(1e18).times(86400).toFixed(2)).toLocaleString()} ${ticker}/day`,
+                    `${parseFloat(supplyBorrowData.expectedSupply.div(1e18).times(86400).times(30).toFixed(2)).toLocaleString()} ${ticker}/month`
+                ].join(spacer),
+                `BORROW: ` + spacer + [
+                    `${supplyBorrowData.expectedBorrow.div(1e18).toFixed(18)} ${ticker}/sec`,
+                    `${parseFloat(supplyBorrowData.expectedBorrow.div(1e18).times(86400).toFixed(2)).toLocaleString()} ${ticker}/day`,
+                    `${parseFloat(supplyBorrowData.expectedBorrow.div(1e18).times(86400).times(30).toFixed(2)).toLocaleString()} ${ticker}/month`
+                ].join(spacer),
+            ].join('\n        '))
             // Add the proposed reward speed
             await addProposalToPropData(unitroller, '_setRewardSpeed',
                 [
                     EthersBigNumber.from(assetType), // 0 = WELL, 1 = GLMR
-                    contracts.MARKETS[assetTicker].mTokenAddress,
+                    contracts.MARKETS[assetTicker]?.mTokenAddress ?? extraMarketAddresses[assetTicker],
                     EthersBigNumber.from(supplyBorrowData.expectedSupply.toFixed()),
                     EthersBigNumber.from(supplyBorrowData.expectedBorrow.toFixed()),
                 ],
