@@ -480,7 +480,7 @@ export async function assertCF(
   if (!collateralFactor.eq(expected)) {
     throw new Error(`Unexpected Collateral Factor value in market ${marketAddress}. Expected: ${expected}, Actual: ${collateralFactor.toString()}`)
   }
-  console.log(`    ✅ Collateral Factor set correctly.`)
+  console.log(`    ✅ Collateral Factor set to expected value ${expected} / ${expectedCollateralFactor}%.`)
 }
 
 /**
@@ -514,7 +514,7 @@ export async function assertBorrowCap(
  * 
  * @param provider An ethers provider.
  * @param marketAddress The address of the market.
- * @param expectedRFPercent The expected value.
+ * @param expectedRFPercent The expected value as a whole percent (i.e. 25 for 25%)
  */
 export async function assertMarketRF(
   provider: ethers.providers.JsonRpcProvider,
@@ -528,7 +528,7 @@ export async function assertMarketRF(
   if (!reserveFactor.eq(expected)) {
     throw new Error(`Unexpected RF value in market ${marketAddress}. Expected: ${expected}, Actual: ${reserveFactor.toString()}`)
   }
-  console.log(`    ✅ Reserve Factor set correctly.`)
+  console.log(`    ✅ Reserve Factor set to expected value ${expected} / ${expectedRFPercent}%.`)
 }
 
 /**
