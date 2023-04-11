@@ -83,7 +83,7 @@ export async function passGovProposal(contracts: ContractBundle, provider: ether
         'Gov proposal unit test'
     )
     await proposalResult.wait()
-    console.log(`[+] Proposed in hash: ${proposalResult.hash}`)
+    shouldLogProposal && console.log(`[+] Proposed in hash: ${proposalResult.hash}`)
 
     const proposalID = await governor.proposalCount()
 
@@ -91,7 +91,7 @@ export async function passGovProposal(contracts: ContractBundle, provider: ether
     let proposal = await governor.proposals(proposalID)
 
     // Delay until voting begins by waiting until the start time plus one second
-    console.log("[+] Fast forwarding in time...")
+    shouldLogProposal && console.log("[+] Fast forwarding in time...")
     await provider.send("evm_mine", [proposal.startTimestamp.toNumber() + 1])
 
     // Vote for the proposal
@@ -103,16 +103,16 @@ export async function passGovProposal(contracts: ContractBundle, provider: ether
     const voteValueYes = 0
     const voteResult = await governor.castVote(proposalID, voteValueYes)
     await voteResult.wait()
-    console.log(`[+] Voted for proposal in ${voteResult.hash}`)
+    shouldLogProposal && console.log(`[+] Voted for proposal in ${voteResult.hash}`)
 
     // Delay until voting end by waiting until the end time and mining one more block
-    console.log("[+] Fast forwarding in time...")
+    shouldLogProposal && console.log("[+] Fast forwarding in time...")
     await provider.send("evm_mine", [proposal.endTimestamp.toNumber() + 1]);
 
     // Queue our proposal
     const queueResult = await governor.queue(proposalID)
     await queueResult.wait()
-    console.log(`[+] Queued for Execution in Hash: ${queueResult.hash}`)
+    shouldLogProposal && console.log(`[+] Queued for Execution in Hash: ${queueResult.hash}`)
 
     const timelock = contracts.TIMELOCK.contract.connect(provider)
 
@@ -125,7 +125,7 @@ export async function passGovProposal(contracts: ContractBundle, provider: ether
     const executeResult = await governor.execute(proposalID)
     await executeResult.wait()
 
-    console.log(`[+] Executed in hash: ${executeResult.hash}`)
+    shouldLogProposal && console.log(`[+] Executed in hash: ${executeResult.hash}`)
 }
 
 export async function addProposalToPropData(contract: Contract, fn: string, args: any[], proposalData: any){
