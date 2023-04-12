@@ -105,4 +105,25 @@ export async function assertExpectedEndState(contracts: ContractBundle, provider
         }
     }
 
+    // Go make sure that previously failed proposals are also not able to suddenly be queued and are still in the
+    // DEFEATED state
+
+    const STATE_DEFEATED = 3
+    const DEFEATED_PROP_NUMBER = 17
+
+    const failedPropState = await gov.state(DEFEATED_PROP_NUMBER)
+    if (!new BigNumber(failedPropState.toString()).isEqualTo(STATE_DEFEATED)){
+        throw new Error(`Expected prop ${DEFEATED_PROP_NUMBER} to be in the DEFEATED state, but has state == ${failedPropState.toString()}!`)
+    }
+
+    try {
+        await gov.connect(provider.getSigner(0)).queue(DEFEATED_PROP_NUMBER)
+    } catch(e) {
+        if (!e.toString().includes('GovernorApollo::queue: proposal can only be queued if it is succeeded')){
+            console.error('The proposal didn\'t fail as expected!')
+            throw e
+        } else {
+            console.log("✅ Previously failed proposal is incapable of being queued")
+        }
+    }
 }
