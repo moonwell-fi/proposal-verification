@@ -13,8 +13,9 @@ export async function generateProposalData(contracts: ContractBundle, provider: 
 
     console.log("[+] Constructing Proposal...")
 
-    const NEW_UPPER_CAP = new BigNumber(45_000_001).shiftedBy(18)
-    const NEW_LOWER_CAP = new BigNumber(45_000_000).shiftedBy(18)
+    // Lock both caps within 1 vote of eachother
+    const NEW_UPPER_CAP = new BigNumber(40_000_001).shiftedBy(18)
+    const NEW_LOWER_CAP = new BigNumber(40_000_000).shiftedBy(18)
 
     const governor = contracts.GOVERNOR.contract.connect(provider)
 

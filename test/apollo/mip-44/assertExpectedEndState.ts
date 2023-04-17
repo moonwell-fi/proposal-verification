@@ -19,8 +19,8 @@ export async function assertExpectedEndState(contracts: ContractBundle, provider
     const currentUpperCap = new BigNumber((await gov.upperQuorumCap()).toString()).toFixed()
     const currentLowerCap = new BigNumber((await gov.lowerQuorumCap()).toString()).toFixed()
 
-    const EXPECTED_UPPER_QUORUM_CAP = 45_000_001
-    const EXPECTED_LOWER_QUORUM_CAP = 45_000_000
+    const EXPECTED_UPPER_QUORUM_CAP = 40_000_001
+    const EXPECTED_LOWER_QUORUM_CAP = 40_000_000
 
     if (currentUpperCap != new BigNumber(EXPECTED_UPPER_QUORUM_CAP).shiftedBy(18).toFixed()){
         throw new Error("Upper quorum cap is not as expected!")
@@ -39,7 +39,7 @@ export async function assertExpectedEndState(contracts: ContractBundle, provider
     console.log("\n=== Attempting to pass new proposal with just over quorum cap ===\n")
 
     // Go return the excess gov tokens we have, getting us to just above the upper quorum cap
-    const QUORUM_CAP = 45_000_001
+    const QUORUM_CAP = 40_000_001
 
     const govToken = contracts.GOV_TOKEN.contract.connect(provider)
     const deployer = await provider.getSigner(0)
@@ -52,8 +52,8 @@ export async function assertExpectedEndState(contracts: ContractBundle, provider
 
     await govToken.connect(deployer).transfer(F_MOVR_GRANT, delta.shiftedBy(18).toFixed())
 
-    const updatedBalance = new BigNumber((await govToken.balanceOf(await deployer.getAddress())).toString())
-    console.log("[+] New balance for proposer", updatedBalance.shiftedBy(-18).toFixed())
+    const updatedBalance = new BigNumber((await govToken.getCurrentVotes(await deployer.getAddress())).toString())
+    console.log("[+] New voting power for proposer", updatedBalance.shiftedBy(-18).toFixed(), 'MFAM')
     if (!updatedBalance.shiftedBy(-18).isEqualTo(QUORUM_CAP + 1)){
         throw new Error("Updated holdings aren't correct!")
     }
@@ -126,4 +126,9 @@ export async function assertExpectedEndState(contracts: ContractBundle, provider
             console.log("✅ Previously failed proposal is incapable of being queued")
         }
     }
+
+    // Go make sure that adding 2 more MFAM back to the deployer means they can submit again
+    await govToken.connect(provider.getSigner(F_MOVR_GRANT)).transfer(await deployer.getAddress(), new BigNumber(2).shiftedBy(18).toFixed())
+    await passGovProposal(contracts, provider, proposalData2, 0, false)
+    console.log('✅ New `getQuorum()` set to ', new BigNumber((await govenor.getQuorum()).toString()).shiftedBy(-18).toFixed())
 }
