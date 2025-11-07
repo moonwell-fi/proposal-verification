@@ -17,9 +17,12 @@ test("mip-r32-verification", async () => {
     console.log("MIP-R32: Pause Mint/Borrow on Moonriver")
     console.log("===========================================\n")
     console.log("Summary: This proposal pauses minting (supplying) and")
-    console.log("borrowing on MOVR, xcKSM, and FRAX markets due to the")
-    console.log("scheduled deprecation of Chainlink price feeds on")
-    console.log("November 10th, 2025. Users can still withdraw and repay.\n")
+    console.log("borrowing across Moonwell markets on Moonriver due to the")
+    console.log("scheduled deprecation of Chainlink price feeds used to")
+    console.log("secure these markets. The markets affected are the xcKSM,")
+    console.log("MOVR, and FRAX markets, respectively. This action keeps")
+    console.log("users protected and maintains protocol safety while Moonriver")
+    console.log("markets have deprecated oracle service.\n")
 
     const contracts = Contracts.moonriver
 
