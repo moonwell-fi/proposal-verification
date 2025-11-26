@@ -10,7 +10,7 @@ async function main() {
     const provider = new ethers.providers.JsonRpcProvider(RPC_URL)
 
     console.log('\n===========================================')
-    console.log('MIP-R33: Proposal Calldata Generator')
+    console.log('MIP-R33: Pause Emissions & Reduce CF Calldata')
     console.log('===========================================\n')
 
     console.log('Governor Address:', contracts.GOVERNOR.address)
@@ -34,12 +34,22 @@ async function main() {
     console.log(`Total actions: ${proposalData.targets.length}`)
     console.log(`Target (Comptroller): ${proposalData.targets[0]}`)
     console.log('\nActions:')
+    const markets = ['MOVR', 'xcKSM', 'FRAX']
+    const cfMarkets = ['MOVR', 'FRAX'] // xcKSM excluded
     proposalData.signatures.forEach((sig, i) => {
-        const marketIdx = Math.floor(i / 2)
-        const markets = ['MOVR', 'xcKSM', 'FRAX']
-        const rewardType = i % 2 === 0 ? 'GOVTOKEN' : 'NATIVE'
-        console.log(`  ${i + 1}. ${sig} - ${markets[marketIdx]} ${rewardType}`)
+        if (sig.includes('_setRewardSpeed')) {
+            const marketIdx = Math.floor(i / 2)
+            const rewardType = i % 2 === 0 ? 'GOVTOKEN' : 'NATIVE'
+            console.log(`  ${i + 1}. ${sig} - ${markets[marketIdx]} ${rewardType}`)
+        } else if (sig.includes('_setCollateralFactor')) {
+            const cfMarketIdx = i - 6 // After 6 reward speed actions
+            console.log(`  ${i + 1}. ${sig} - ${cfMarkets[cfMarketIdx]} CF`)
+        }
     })
+    console.log('\nCollateral Factor Changes:')
+    console.log('  - MOVR: 50%')
+    console.log('  - FRAX: 40%')
+    console.log('  - xcKSM: EXCLUDED (oracle becomes stale during governance period)')
 
     // Encode the propose function call
     console.log('\n===========================================')
