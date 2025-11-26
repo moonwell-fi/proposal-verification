@@ -28,6 +28,10 @@ async function main() {
     console.log('✅ Loaded full markdown proposal from docs/MIP-R33.md')
     console.log(`Description length: ${description.length} characters\n`)
 
+    console.log('=== PROPOSAL DESCRIPTION ===\n')
+    console.log(description)
+    console.log('\n=== END DESCRIPTION ===\n')
+
     console.log('=== PROPOSAL DATA ===\n')
     console.log(JSON.stringify(proposalData, null, 2))
     console.log('\n=== SUMMARY ===')
