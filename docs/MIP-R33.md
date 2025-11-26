@@ -1,133 +1,63 @@
-# MIP-R33: Pause Supply Emissions & Reduce Collateral Factors on Moonriver
+## MIP-R33: Moonriver Markets Reward and Collateral Factor Changes
 
-## Summary
+### **Summary**
+This proposal disables reward emissions to both borrowers and suppliers on Moonriver markets that are currently operating in withdraw/repay-only mode. These markets no longer accept new supply or borrow activity, and continuing emissions provides no meaningful benefit. The following markets will be affected: xcKSM, MOVR, and FRAX.
 
-This proposal pauses supply-side token emissions and reduces collateral factors for all 3 markets on Moonriver.
+Reward emissions will be turned off until further notice. The Moonwell Foundation will separately handle any reward shortfall through a one-time treasury top-up.
 
-**Emission Changes (all 3 markets):**
-- Supply emissions will be set to 0 while borrow emissions will be set to 1 wei per second
-- This applies to both WELL token rewards and native MOVR rewards
-- Affects: MOVR, xcKSM, and FRAX markets
+Additionally, this proposal includes initial collateral factor reductions on Moonriver (xcKSM 50%, MOVR 50%, FRAX 40%) as part of a staged risk-off process. These adjustments help ensure a controlled wind-down of remaining positions while giving users sufficient time to repay.
 
-**Collateral Factor Changes (all 3 markets):**
-- xcKSM: 50% (down from 59%)
-- MOVR: 50% (down from 60%)
-- FRAX: 40% (down from 50%)
+### **Background**
 
-This action is a follow-up to MIP-R32 which paused minting and borrowing on these markets due to Chainlink oracle deprecation.
+ Moonriver markets have been set to withdraw/repay-only mode due to oracle deprecation, risk mitigation, or migration preparation. In this restricted state:
 
-## Background
+- Users cannot open new supply positions
+- Users cannot initiate new borrows
+- Only withdrawals and loan repayments are enabled
+- No active lending or borrowing activity is taking place
 
-Following MIP-R32's pause of minting (supplying) and borrowing on MOVR, xcKSM, and FRAX markets, it is necessary to also adjust token emissions to reflect the new market state.
+Despite this, rewards have continued emitting, even though incentives no longer drive usage or serve their intended purpose. Emissions on inactive markets are inefficient and create administrative overhead.
 
-With minting paused on these markets:
-- Users cannot add new supply positions
-- Continuing to emit supply-side rewards would be inefficient
-- Existing suppliers will no longer receive emission rewards
+Again, the following markets will be affected:
 
-With borrowing paused but existing borrow positions remaining:
-- Borrow emissions are set to minimal (1 wei/second) to maintain contract functionality
-- This prevents complete shutdown while effectively stopping new reward accumulation
+1. xcKSM
+2. MOVR
+3. FRAX
 
-## Proposal
+**Source:**
+[Chainlink Documentation — Deprecation of Moonriver Data Feeds](https://docs.chain.link/data-feeds/deprecating-feeds?page=1&testnetPage=1#moonriver-mainnet)
 
-This proposal enacts the following changes on **Moonriver** only for the MOVR, xcKSM, and FRAX markets:
+### **Proposal**
 
-### 1. Pause Supply Emissions
+The proposal enacts the following changes on **Moonriver**:
 
-Set supply-side emissions to 0 for:
-- **WELL token rewards** (governance token)
-- **MOVR token rewards** (native token)
+### **1. Turn Off Reward Emissions**
+All reward emissions for Moonriver markets currently in withdraw/repay-only mode will be set to 0.
 
-### 2. Set Minimal Borrow Emissions
+This applies to all affected markets where supply/borrow is disabled and only unwinding is possible.
 
-Set borrow-side emissions to 1 wei per second for:
-- **WELL token rewards** (governance token)
-- **MOVR token rewards** (native token)
+### **2. Collateral Factor Changes**
 
-This minimal rate effectively stops rewards while maintaining technical compatibility.
+This proposal also introduces initial collateral factor (CF) reductions for Moonriver assets. These changes are designed to support a safe wind-down of Moonriver markets.
 
-### 3. Reduce Collateral Factors
+**Immediate CF changes (effective upon execution):**
+- xcKSM: 50%
+- MOVR: 50%
+- FRAX: 40%
 
-Reduce collateral factors to lower risk exposure:
-- **xcKSM**: 50% (down from 59%)
-- **MOVR**: 50% (down from 60%)
-- **FRAX**: 40% (down from 50%)
+These represent the first step in a staged reduction process that will continue over subsequent proposals.
 
-These reduced collateral factors limit the borrowing power of existing positions while allowing users to maintain their current positions.
+**Planned future reductions:**
+- 50% → 25%
+- 25% → 0%
 
-## Rationale
+Each reduction stage will include some notice in advance to ensure that users have sufficient time to repay their positions.
 
-Since MIP-R32 paused new supply and borrow activity on these markets, continuing to emit rewards for supply would serve no purpose. Setting supply emissions to 0 prevents wasted token distribution.
+### **Rationale**
+Reward emissions on markets that are restricted to withdraw/repay-only mode no longer serve their intended purpose, as users cannot supply or borrow in ways that incentives were designed to encourage. Continuing to emit in this state provides no  benefit to the protocol, creates unnecessary treasury expenditure, and generates confusion within the user interface by displaying incentives on inactive markets. Disabling emissions is therefore a straightforward, action that preserves treasury resources, and simplifies contributor operations.
 
-Borrow emissions are set to a minimal value (1 wei/second) rather than 0 to:
-- Maintain contract state consistency
-- Avoid potential edge cases with zero values
-- Effectively stop meaningful reward accumulation (1 wei/second is negligible)
+### **Voting Options**
 
-Reducing collateral factors provides additional risk mitigation by:
-- Limiting the borrowing power of existing collateral
-- Reducing potential bad debt exposure as oracle feeds are deprecated
-- Allowing existing users to maintain positions while limiting new risk
-
-This approach aligns with the security-first principles established in MIP-R32 while efficiently managing protocol resources.
-
-## Voting Options
-
-- **Yes** — Pause supply emissions, set borrow emissions to 1 wei/second, and reduce collateral factors for MOVR, xcKSM, and FRAX markets.
-- **No** — Continue current emission rates and collateral factors despite markets being paused.
-- **Abstain** — No preference.
-
-## Technical Implementation
-
-This proposal executes 9 actions through the Moonwell Comptroller:
-
-### Emission Speed Changes (6 actions)
-
-1. `_setRewardSpeed(GOVTOKEN, MOVR, 0, 1)` - WELL rewards: supply=0, borrow=1
-2. `_setRewardSpeed(NATIVE, MOVR, 0, 1)` - MOVR rewards: supply=0, borrow=1
-3. `_setRewardSpeed(GOVTOKEN, xcKSM, 0, 1)` - WELL rewards: supply=0, borrow=1
-4. `_setRewardSpeed(NATIVE, xcKSM, 0, 1)` - MOVR rewards: supply=0, borrow=1
-5. `_setRewardSpeed(GOVTOKEN, FRAX, 0, 1)` - WELL rewards: supply=0, borrow=1
-6. `_setRewardSpeed(NATIVE, FRAX, 0, 1)` - MOVR rewards: supply=0, borrow=1
-
-### Collateral Factor Changes (3 actions)
-
-7. `_setCollateralFactor(xcKSM, 0.50e18)` - xcKSM CF: 50%
-8. `_setCollateralFactor(MOVR, 0.50e18)` - MOVR CF: 50%
-9. `_setCollateralFactor(FRAX, 0.40e18)` - FRAX CF: 40%
-
-All actions target the Comptroller contract at `0x0b7a0EAA884849c6Af7a129e899536dDDcA4905E`.
-
-### Parameters
-
-- **GOVTOKEN** = 0 (WELL token rewards)
-- **NATIVE** = 1 (MOVR token rewards)
-- **Supply Speed** = 0 (no supply rewards)
-- **Borrow Speed** = 1 wei/second (minimal borrow rewards)
-- **Collateral Factor** = 18-digit mantissa (0.50e18 = 50%, 0.40e18 = 40%)
-
-## Testing
-
-The proposal has been thoroughly tested using a fork of Moonriver at block 14,090,000. The test suite validates:
-
-- ✅ Emissions are active before proposal execution
-- ✅ Collateral factors are non-zero before proposal execution
-- ✅ Proposal executes successfully through governance
-- ✅ Supply emissions are 0 after execution
-- ✅ Borrow emissions are 1 after execution
-- ✅ All 6 reward speed updates complete successfully
-- ✅ xcKSM collateral factor updated to 50%
-- ✅ MOVR collateral factor updated to 50%
-- ✅ FRAX collateral factor updated to 40%
-- ✅ All 9 governance actions execute successfully
-
-**Testing Note:** The test mocks the xcKSM XC-20 precompile with a dummy ERC20 contract to enable testing on Ganache, which doesn't properly handle XC-20 precompile calls. This mock is only for testing purposes and does not affect the actual on-chain proposal execution.
-
-Test location: `test/apollo/mip-r33/`
-
-Run tests with: `npm test -- ./test/apollo/mip-r33/`
-
-## Related Proposals
-
-- **MIP-R32**: Pause Mint/Borrow on Moonriver - Prerequisite proposal that paused market activity
+- Yes — Disable reward emissions for Moonriver markets currently in withdraw/repay-only mode.
+- No — Maintain current reward emissions on these inactive markets.
+- Abstain — No preference.
