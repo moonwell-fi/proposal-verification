@@ -35,7 +35,7 @@ async function main() {
     console.log(`Target (Comptroller): ${proposalData.targets[0]}`)
     console.log('\nActions:')
     const markets = ['MOVR', 'xcKSM', 'FRAX']
-    const cfMarkets = ['MOVR', 'FRAX'] // xcKSM excluded
+    const cfMarkets = ['xcKSM', 'MOVR', 'FRAX']
     proposalData.signatures.forEach((sig, i) => {
         if (sig.includes('_setRewardSpeed')) {
             const marketIdx = Math.floor(i / 2)
@@ -47,9 +47,9 @@ async function main() {
         }
     })
     console.log('\nCollateral Factor Changes:')
+    console.log('  - xcKSM: 50%')
     console.log('  - MOVR: 50%')
     console.log('  - FRAX: 40%')
-    console.log('  - xcKSM: EXCLUDED (oracle becomes stale during governance period)')
 
     // Encode the propose function call
     console.log('\n===========================================')
