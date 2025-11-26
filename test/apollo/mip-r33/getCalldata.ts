@@ -46,6 +46,9 @@ async function main() {
             console.log(`  ${i + 1}. ${sig} - ${cfMarkets[cfMarketIdx]} CF`)
         }
     })
+    console.log('\nReward Speed Changes (all markets):')
+    console.log('  - Supply Speed: 0 (emissions disabled)')
+    console.log('  - Borrow Speed: 1 wei/sec (minimal)')
     console.log('\nCollateral Factor Changes:')
     console.log('  - xcKSM: 50%')
     console.log('  - MOVR: 50%')
