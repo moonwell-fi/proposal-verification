@@ -4,7 +4,14 @@ import {ContractBundle, Market, Contracts} from '@moonwell-fi/moonwell.js'
 import {
     assertMarketGovTokenRewardSpeed,
     assertMarketNativeTokenRewardSpeed,
-    assertRoundedWellBalance
+    assertRoundedWellBalance,
+    assertMarketCFIsNonZero,
+    assertMarketCFEqualsPercent
+} from "./assertions";
+
+export {
+    assertMarketCFIsNonZero,
+    assertMarketCFEqualsPercent
 } from "./assertions";
 import BigNumber from "bignumber.js";
 
