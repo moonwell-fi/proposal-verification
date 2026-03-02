@@ -9,17 +9,12 @@ import {
 
 import {Contracts} from '@moonwell-fi/moonwell.js'
 import {generateProposalData} from "./generateProposalData";
-import {F_MOVR_GRANT, FORK_BLOCK, RPC_URL, ORACLE_ADDRESS, UNDERLYING_TOKENS, DIRECT_PRICES} from "./vars";
+import {F_MOVR_GRANT, FORK_BLOCK, RPC_URL, ORACLE_ADDRESS, UNDERLYING_TOKENS, DIRECT_PRICES, MOVR_STATIC_FEED_ADDRESS} from "./vars";
 
 const CHAINLINK_ORACLE_ABI = [
     'function getUnderlyingPrice(address mToken) view returns (uint256)',
     'function assetPrices(address asset) view returns (uint256)',
     'function admin() view returns (address)',
-];
-
-const STATIC_FEED_ABI = [
-    'function latestRoundData() view returns (uint80, int256, uint256, uint256, uint80)',
-    'function decimals() view returns (uint8)',
 ];
 
 // Helper function to set MFAM balance directly using storage manipulation
@@ -38,120 +33,13 @@ async function setMFAMBalance(provider: ethers.providers.JsonRpcProvider, addres
     ])
 }
 
-/**
- * Deploy a mock StaticPriceFeed on the Ganache fork.
- *
- * Since we can't compile Solidity in the test, we inject hand-crafted EVM
- * bytecode that reads from the WMOVR/USDC pair and returns the price in
- * Chainlink 8-decimal format. The bytecode implements:
- *   - decimals() → 8
- *   - latestRoundData() → reads WMOVR/USDC pair reserves, computes price
- *
- * For testing simplicity, we use a minimal mock that returns hardcoded
- * reserves-derived price (~$46 MOVR). In production, the real StaticPriceFeed.sol
- * contract is deployed with constructor args pointing to the Solarbeam pair.
- */
-async function deployMockStaticPriceFeed(provider: ethers.providers.JsonRpcProvider): Promise<string> {
-    const mockFeedAddress = '0x1111111111111111111111111111111111111111'
-
-    // Inject bytecode that dispatches on function selector:
-    // - decimals() (0x313ce567): returns 8
-    // - latestRoundData() and all other calls: returns (1, 1000000000, timestamp, timestamp, 1)
-    //   where 1000000000 = $10 MOVR in 8-decimal Chainlink format
-    const runtimeBytecode = buildMockDexFeedBytecode()
-
-    await provider.send('evm_setAccountCode', [
-        mockFeedAddress,
-        runtimeBytecode
-    ])
-
-    // Verify the mock works
-    const mockFeed = new ethers.Contract(mockFeedAddress, STATIC_FEED_ABI, provider)
-    const [, answer, , updatedAt,] = await mockFeed.latestRoundData()
-    const dec = await mockFeed.decimals()
-    console.log(`[+] Deployed mock StaticPriceFeed at ${mockFeedAddress}`)
-    console.log(`    answer=${answer.toString()} ($${(parseFloat(answer.toString()) / 1e8).toFixed(2)} MOVR), decimals=${dec}, updatedAt=${updatedAt.toString()}`)
-
-    return mockFeedAddress
-}
-
-/**
- * Build minimal EVM runtime bytecode for a mock DEX price feed.
- *
- * Returns 8 for decimals() and a latestRoundData tuple with a realistic
- * MOVR price (~$46.31) for all other calls.
- *
- * Bytecode layout:
- *   0x00: PUSH0 / CALLDATALOAD / SHR → extract selector
- *   0x05: Check decimals() selector → jump to handler
- *   0x0f: Default path: store 5-word tuple and RETURN
- *   0x2f: decimals handler: store 8 and RETURN
- */
-function buildMockDexFeedBytecode(): string {
-    // MOVR price = $10 → 1000000000 in 8-decimal format = 0x3B9ACA00
-    const bytecodeOps = [
-        // Load selector
-        '5f',         // PUSH0
-        '35',         // CALLDATALOAD
-        '60e0',       // PUSH1 0xe0
-        '1c',         // SHR → selector on stack
-
-        // Check if decimals() = 0x313ce567
-        '80',         // DUP1
-        '63313ce567', // PUSH4 0x313ce567
-        '14',         // EQ
-        '602f',       // PUSH1 0x2f (jump to decimals handler)
-        '57',         // JUMPI
-
-        // Default: return latestRoundData tuple
-        '50',         // POP (clean selector)
-
-        // word 0 (0x00): roundId = 1
-        '6001',       // PUSH1 1
-        '5f',         // PUSH0
-        '52',         // MSTORE
-        // word 1 (0x20): answer = 1000000000 (0x3B9ACA00) = $10
-        '633b9aca00', // PUSH4 0x3B9ACA00
-        '6020',       // PUSH1 0x20
-        '52',         // MSTORE
-        // word 2 (0x40): startedAt = 1
-        '6001',       // PUSH1 1
-        '6040',       // PUSH1 0x40
-        '52',         // MSTORE
-        // word 3 (0x60): updatedAt = 1
-        '6001',       // PUSH1 1
-        '6060',       // PUSH1 0x60
-        '52',         // MSTORE
-        // word 4 (0x80): answeredInRound = 1
-        '6001',       // PUSH1 1
-        '6080',       // PUSH1 0x80
-        '52',         // MSTORE
-        // RETURN 160 bytes from offset 0
-        '60a0',       // PUSH1 0xa0
-        '5f',         // PUSH0
-        'f3',         // RETURN
-
-        // decimals handler (offset 0x2f)
-        '5b',         // JUMPDEST
-        '50',         // POP
-        '6008',       // PUSH1 8
-        '5f',         // PUSH0
-        '52',         // MSTORE
-        '6020',       // PUSH1 0x20
-        '5f',         // PUSH0
-        'f3',         // RETURN
-    ].join('')
-
-    return '0x' + bytecodeOps
-}
-
 test("mip-r39-verification", async () => {
     console.log("\n===========================================")
-    console.log("MIP-R39: Set Oracle Prices for Moonriver Markets")
+    console.log("MIP-R39: Restore Withdrawals on Moonriver by Setting Oracle Prices")
     console.log("===========================================\n")
     console.log("Summary: This proposal sets prices on the ChainlinkOracle")
     console.log("to unblock user redemptions after Chainlink feed deprecation.")
-    console.log("MOVR uses a StaticPriceFeed with a fixed price set at deploy time.")
+    console.log("MOVR uses a StaticPriceFeed at", MOVR_STATIC_FEED_ADDRESS)
     console.log("Other markets use setDirectPrice with approximate static values.\n")
 
     const contracts = Contracts.moonriver
@@ -188,8 +76,15 @@ test("mip-r39-verification", async () => {
         ])
         console.log("[+] Mocked xcKSM XC-20 precompile with dummy ERC20")
 
-        // Deploy mock StaticPriceFeed for MOVR on the Ganache fork
-        const movrFeedAddress = await deployMockStaticPriceFeed(provider)
+        // Verify the deployed StaticPriceFeed is accessible on the fork
+        const staticFeed = new ethers.Contract(MOVR_STATIC_FEED_ADDRESS, [
+            'function latestRoundData() view returns (uint80, int256, uint256, uint256, uint80)',
+            'function decimals() view returns (uint8)',
+        ], provider)
+        const [, answer, , updatedAt,] = await staticFeed.latestRoundData()
+        const dec = await staticFeed.decimals()
+        console.log(`[+] StaticPriceFeed at ${MOVR_STATIC_FEED_ADDRESS}`)
+        console.log(`    answer=${answer.toString()} ($${(parseFloat(answer.toString()) / 1e8).toFixed(2)} MOVR), decimals=${dec}`)
 
         // === ASSERT PRE-STATE: All oracle prices revert ===
         console.log("\n[+] Asserting pre-state: all oracle prices should revert...")
@@ -217,13 +112,13 @@ test("mip-r39-verification", async () => {
             5_000_000
         )
 
-        // Generate proposal data with the test-deployed MOVR feed address
-        const proposalData = await generateProposalData(contracts, provider, movrFeedAddress)
+        // Generate and pass proposal (uses the real deployed StaticPriceFeed address)
+        const proposalData = await generateProposalData(contracts, provider)
 
         console.log("\n[+] Proposal Summary:")
         console.log(`    - Total actions: ${proposalData.targets.length}`)
         console.log(`    - 6x setDirectPrice for ERC20 markets`)
-        console.log(`    - 1x setFeed for MOVR (StaticPriceFeed @ $10) -> ${movrFeedAddress}\n`)
+        console.log(`    - 1x setFeed for MOVR (StaticPriceFeed @ $1.25) -> ${MOVR_STATIC_FEED_ADDRESS}\n`)
 
         await passGovProposal(contracts, provider, proposalData)
 

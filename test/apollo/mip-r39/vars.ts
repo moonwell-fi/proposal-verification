@@ -28,13 +28,13 @@ export const UNDERLYING_TOKENS: { [key: string]: string } = {
 // they just need to be non-zero so getUnderlyingPrice() doesn't revert.
 // NOTE: xcKSM and FRAX DEX pools are dead, so we use static prices for them.
 export const DIRECT_PRICES: { [key: string]: string } = {
-    'USDC.multi': '1000000000000000000',       // $1
-    'USDT.multi': '1000000000000000000',       // $1
-    'FRAX':       '1000000000000000000',       // $1
-    'ETH.multi':  '2500000000000000000000',    // $2,500
-    'BTC.multi':  '85000000000000000000000',   // $85,000
-    'xcKSM':      '25000000000000000000',      // $25
-}
+  "USDC.multi": "1000000000000000000", // $1
+  "USDT.multi": "1000000000000000000", // $1
+  FRAX: "1000000000000000000", // $1
+  "ETH.multi": "2050000000000000000000", // $2,050
+  "BTC.multi": "69145000000000000000000", // $69,145
+  xcKSM: "4800000000000000000", // $4.80
+};
 
 // MOVR (native token) cannot use setDirectPrice because the ChainlinkOracle
 // has a special code path for native tokens that bypasses the prices[] mapping.
@@ -46,7 +46,5 @@ export const DIRECT_PRICES: { [key: string]: string } = {
 // a fixed MOVR price in Chainlink 8-decimal format.
 //
 // StaticPriceFeed contract: src/oracles/StaticPriceFeed.sol
-// Deploy with: answer = 1000000000 ($10 in 8-decimal Chainlink format)
-//
-// TODO: Replace with actual deployed address before submitting proposal
-export const MOVR_STATIC_FEED_ADDRESS = '0x0000000000000000000000000000000000000000' // REPLACE WITH DEPLOYED ADDRESS
+// Deployed with: answer = 125000000 ($1.25 in 8-decimal Chainlink format)
+export const MOVR_STATIC_FEED_ADDRESS = '0x90791E2F723bd683828FC35904748f9C61aB3C2E'
